@@ -1,4 +1,49 @@
 
+<?php
+
+    include 'koneksi.php';
+
+    session_start();
+
+    if(isset($_SESSION['status']) == 'login'){
+
+        header("location:admin");
+        
+    }
+
+    if (isset($_POST['registrasi'])) {
+        $password = md5($_POST['password']);
+        $username = $_POST['username'];
+
+        // Check if the username already exists
+        $checkUsername = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE username='$username'");
+        if (mysqli_num_rows($checkUsername) > 0) {
+            echo "<script>
+                    alert('Username sudah digunakan, pilih Username lain.');
+                    document.location='registrasi.php';
+                </script>";
+            exit; // Stop further execution
+        }
+
+        // If the username is not taken, proceed with the registration
+        $simpan = mysqli_query($koneksi, "INSERT INTO pengguna (nama,email,telepon, username,  password) VALUES ('$_POST[nama]','$_POST[email]','$_POST[telepon]','$_POST[username]','$password')");
+
+        if ($simpan) {
+            echo "<script>
+                    alert('Berhasil Registrasi!');
+                    document.location='index.php';
+                </script>";
+        } else {
+            echo "<script>
+                    alert('Gagal!');
+                    document.location='registrasi.php';
+                </script>";
+        }
+    }
+
+?>
+
+
 <!doctype html>
 <html lang="en">
 
@@ -44,30 +89,30 @@
 									<div class="form-body">
 										<form class="row g-3" method="POST">
 											<div class="col-12">
-												<label for="nama_lengkap" class="form-label">Nama Lengkap</label>
-												<input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" placeholder="Nama Lengkap">
+												<label for="nama" class="form-label">Nama Lengkap</label>
+												<input type="text" class="form-control" id="nama" name="nama" placeholder="Nama Lengkap"  required>
 											</div>
 											<div class="col-12">
 												<label for="email" class="form-label">Email</label>
-												<input type="email" class="form-control" id="email" name="email" placeholder="Email">
+												<input type="email" class="form-control" id="email" name="email" placeholder="Email" required>
 											</div>
 											<div class="col-12">
-												<label for="no_telepon" class="form-label">No. Telepon</label>
-												<input type="text" class="form-control" id="no_telepon" name="no_telepon" placeholder="No. Telepon">
+												<label for="telepon" class="form-label">No. Telepon</label>
+												<input type="text" class="form-control" id="telepon" name="telepon" placeholder="No. Telepon" required>
 											</div>
 											<div class="col-12">
 												<label for="username" class="form-label">Username</label>
-												<input type="text" class="form-control" id="username" name="username" placeholder="Username">
+												<input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
 											</div>
 											<div class="col-12">
 												<label for="inputChoosePassword" class="form-label">Password</label>
 												<div class="input-group" id="show_hide_password">
-													<input type="password" name="password" class="form-control border-end-0" id="inputChoosePassword" placeholder="Enter Password"> <a href="javascript:;" class="input-group-text bg-transparent"><i class='bx bx-hide'></i></a>
+													<input type="password" name="password" class="form-control border-end-0" id="inputChoosePassword" placeholder="Enter Password" required> <a href="javascript:;" class="input-group-text bg-transparent"><i class='bx bx-hide'></i></a>
 												</div>
 											</div>
 											<div class="col-12">
 												<div class="d-grid">
-													<button type="submit" name="login" class="btn btn-primary">Login</button>
+													<button type="submit" name="registrasi" class="btn btn-primary">Registrasi</button>
 												</div>
 											</div>
 											<div class="col-12">
