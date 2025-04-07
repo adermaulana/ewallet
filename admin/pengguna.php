@@ -242,7 +242,8 @@ if(isset($_GET['hal']) == "hapus"){
 								<tfoot>
 									<tr>
 										<th>No</th>
-										<th>Nama Kategori</th>
+										<th>Nama Pengguna</th>
+										<th>Username</th>
 										<th>Aksi</th>
 									</tr>
 								</tfoot>
