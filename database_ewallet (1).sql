@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 08, 2025 at 08:05 AM
+-- Generation Time: Apr 21, 2025 at 09:49 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -49,15 +49,21 @@ INSERT INTO `admin` (`id`, `nama`, `username`, `password`) VALUES
 
 CREATE TABLE `pengguna` (
   `id_pengguna` int(11) NOT NULL,
-  `nama_pengguna` varchar(50) NOT NULL,
-  `kata_sandi` varchar(255) NOT NULL,
+  `username` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
   `email` varchar(100) NOT NULL,
   `nama_lengkap` varchar(100) NOT NULL,
   `nomor_telepon` varchar(15) DEFAULT NULL,
-  `peran` enum('admin','pengguna') DEFAULT 'pengguna',
   `nomor_rekening` varchar(20) DEFAULT NULL,
   `saldo` decimal(15,2) DEFAULT 0.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `pengguna`
+--
+
+INSERT INTO `pengguna` (`id_pengguna`, `username`, `password`, `email`, `nama_lengkap`, `nomor_telepon`, `nomor_rekening`, `saldo`) VALUES
+(1, 'udil', '70ab0f4e661e3022bfe73e95c72cb7e6', 'udil@gmail.com', 'Udil', '085439484', NULL, 0.00);
 
 -- --------------------------------------------------------
 
@@ -123,7 +129,6 @@ ALTER TABLE `admin`
 --
 ALTER TABLE `pengguna`
   ADD PRIMARY KEY (`id_pengguna`),
-  ADD UNIQUE KEY `nama_pengguna` (`nama_pengguna`),
   ADD UNIQUE KEY `email` (`email`),
   ADD UNIQUE KEY `nomor_rekening` (`nomor_rekening`);
 
@@ -164,7 +169,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `pengguna`
 --
 ALTER TABLE `pengguna`
-  MODIFY `id_pengguna` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_pengguna` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `riwayat_transfer`
