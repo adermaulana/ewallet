@@ -25,8 +25,8 @@
         $login = mysqli_query($koneksi, "SELECT * FROM admin WHERE username='$username' and password='$password'");
         $cek = mysqli_num_rows($login);
 
-		// $loginPengguna = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE username='$username' and password='$password'");
-        // $cekPengguna = mysqli_num_rows($loginPengguna);
+		$loginPengguna = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE username='$username' and password='$password'");
+        $cekPengguna = mysqli_num_rows($loginPengguna);
 
         if($cek > 0) {
             $admin_data = mysqli_fetch_assoc($login);
@@ -36,14 +36,14 @@
             $_SESSION['status'] = "login";
             header('location:admin');
 
-         } // else if($cekPengguna > 0) {
-        //     $admin_data = mysqli_fetch_assoc($loginPengguna);
-        //     $_SESSION['id_pengguna'] = $admin_data['id'];
-        //     $_SESSION['nama_pengguna'] = $admin_data['nama'];
-        //     $_SESSION['username_pengguna'] = $email;
-        //     $_SESSION['status'] = "login";
-        //     header('location:pengguna');
-        //}   
+         } else if($cekPengguna > 0) {
+			$admin_data = mysqli_fetch_assoc($loginPengguna);
+			$_SESSION['id_pengguna'] = $admin_data['id'];
+			$_SESSION['nama_pengguna'] = $admin_data['nama_lengkap'];
+			$_SESSION['username_pengguna'] = $username;
+			$_SESSION['status'] = "login";
+			header('location:pengguna');
+         }   
 		else {
             echo "<script>
             alert('Login Gagal, Periksa Username dan Password Anda!');

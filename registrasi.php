@@ -26,7 +26,7 @@
         }
 
         // If the username is not taken, proceed with the registration
-        $simpan = mysqli_query($koneksi, "INSERT INTO pengguna (nama,email,telepon, username,  password) VALUES ('$_POST[nama]','$_POST[email]','$_POST[telepon]','$_POST[username]','$password')");
+        $simpan = mysqli_query($koneksi, "INSERT INTO pengguna (nama_lengkap,email,nomor_telepon, username,  password) VALUES ('$_POST[nama_lengkap]','$_POST[email]','$_POST[nomor_telepon]','$_POST[username]','$password')");
 
         if ($simpan) {
             echo "<script>
@@ -90,7 +90,7 @@
 										<form class="row g-3" method="POST">
 											<div class="col-12">
 												<label for="nama" class="form-label">Nama Lengkap</label>
-												<input type="text" class="form-control" id="nama" name="nama" placeholder="Nama Lengkap"  required>
+												<input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" placeholder="Nama Lengkap"  required>
 											</div>
 											<div class="col-12">
 												<label for="email" class="form-label">Email</label>
@@ -98,7 +98,7 @@
 											</div>
 											<div class="col-12">
 												<label for="telepon" class="form-label">No. Telepon</label>
-												<input type="text" class="form-control" id="telepon" name="telepon" placeholder="No. Telepon" required>
+												<input type="text" class="form-control" id="nomor_telepon" name="nomor_telepon" placeholder="No. Telepon" required>
 											</div>
 											<div class="col-12">
 												<label for="username" class="form-label">Username</label>
