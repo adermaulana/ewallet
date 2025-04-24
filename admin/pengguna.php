@@ -217,6 +217,7 @@ if(isset($_GET['hal']) == "hapus"){
 										<th>No</th>
 										<th>Nama Pengguna</th>
 										<th>Username</th>
+										<th>No. Telepon</th>
 										<th>Aksi</th>
 									</tr>
 								</thead>
@@ -228,11 +229,12 @@ if(isset($_GET['hal']) == "hapus"){
                                     ?>
 									<tr>
 										<td><?= $no++ ?></td>
-										<td><?= $data['nama'] ?></td>
+										<td><?= $data['nama_lengkap'] ?></td>
 										<td><?= $data['username'] ?></td>
+										<td><?= $data['nomor_telepon'] ?></td>
 										<td>
-                                            <a class="btn btn-warning" href="editpengguna.php?hal=edit&id=<?= $data['id']?>">Edit</a>
-                                            <a class="btn btn-danger" onclick="return confirm('Apakah Anda Yakin Ingin Menghapus Data?')" href="pengguna.php?hal=hapus&id=<?= $data['id']?>">Hapus</a>
+                                            <a class="btn btn-warning" href="editpengguna.php?hal=edit&id=<?= $data['id_pengguna']?>">Edit</a>
+                                            <a class="btn btn-danger" onclick="return confirm('Apakah Anda Yakin Ingin Menghapus Data?')" href="pengguna.php?hal=hapus&id=<?= $data['id_pengguna']?>">Hapus</a>
                                         </td>
 									</tr>
                                     <?php
@@ -244,6 +246,7 @@ if(isset($_GET['hal']) == "hapus"){
 										<th>No</th>
 										<th>Nama Pengguna</th>
 										<th>Username</th>
+										<th>No. Telepon</th>
 										<th>Aksi</th>
 									</tr>
 								</tfoot>

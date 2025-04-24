@@ -25,14 +25,14 @@ $id = $nama = $email = $telepon = $username = '';
 // Ambil data pengguna yang akan diedit
 if(isset($_GET['hal']) && $_GET['hal'] == "edit" && isset($_GET['id'])){
     $id = $_GET['id'];
-    $tampil = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE id = '$id'");
+    $tampil = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE id_pengguna = '$id'");
     $data = mysqli_fetch_array($tampil);
     
     if($data){
-        $id = $data['id'];
-        $nama = $data['nama'];
+        $id = $data['id_pengguna'];
+        $nama = $data['nama_lengkap'];
         $email = $data['email'];
-        $telepon = $data['telepon'];
+        $telepon = $data['nomor_telepon'];
         $username = $data['username'];
     } else {
         echo "<script>
@@ -52,23 +52,23 @@ if (isset($_POST['simpan'])) {
     $username = mysqli_real_escape_string($koneksi, $_POST['username']);
     
     // Check if username or email already exists (excluding current user)
-    $check = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE (username='$username' OR email='$email') AND id != '$id_pengguna'");
+    $check = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE (username='$username' OR email='$email') AND id_pengguna != '$id_pengguna'");
     
     if (mysqli_num_rows($check) > 0) {
         echo "<script>
                 alert('Username atau email sudah digunakan oleh pengguna lain!');
-                document.location='edit_pengguna.php?hal=edit&id=$id_pengguna';
+                document.location='editpengguna.php?hal=edit&id=$id';
             </script>";
         exit;
     }
 
     // Update data
     $update = mysqli_query($koneksi, "UPDATE pengguna SET 
-                nama = '$nama',
+                nama_lengkap = '$nama',
                 email = '$email',
-                telepon = '$telepon',
+                nomor_telepon = '$telepon',
                 username = '$username'
-                WHERE id = '$id_pengguna'");
+                WHERE id_pengguna = '$id_pengguna'");
 
     if ($update) {
         echo "<script>
@@ -78,7 +78,7 @@ if (isset($_POST['simpan'])) {
     } else {
         echo "<script>
                 alert('Gagal memperbarui data: ".mysqli_error($koneksi)."');
-                document.location='edit_pengguna.php?hal=edit&id=$id_pengguna';
+                document.location='editpengguna.php?hal=edit&id=$id_pengguna';
             </script>";
     }
 }
@@ -288,11 +288,7 @@ if (isset($_POST['simpan'])) {
 									<input type="password" class="form-control" name="password" id="password" minlength="6">
 									<small class="text-muted">Minimal 6 karakter (biarkan kosong jika tidak ingin mengubah password)</small>
 								</div>
-								
-								<div class="col-md-6 mb-3">
-									<label for="tanggal_bergabung" class="form-label">Tanggal Bergabung</label>
-									<input type="text" class="form-control" value="<?= date('d F Y', strtotime($data['tanggal_bergabung'])) ?>" readonly>
-								</div>
+
 							</div>
 							
 							<div class="col-md-12">
@@ -306,7 +302,7 @@ if (isset($_POST['simpan'])) {
 						// Jika ingin menambahkan fungsi update password
 						if (isset($_POST['simpan']) && !empty($_POST['password'])) {
 							$password = md5($_POST['password']);
-							mysqli_query($koneksi, "UPDATE pengguna SET password = '$password' WHERE id = '$id_pengguna'");
+							mysqli_query($koneksi, "UPDATE pengguna SET password = '$password' WHERE id_pengguna = '$id_pengguna'");
 						}
 						?>
 					</div>

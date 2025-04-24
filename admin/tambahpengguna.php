@@ -39,9 +39,9 @@ if (isset($_POST['simpan'])) {
 
     // Insert data ke database
     $simpan = mysqli_query($koneksi, "INSERT INTO pengguna 
-                        (nama, email, telepon, username, password, tanggal_bergabung) 
+                        (nama_lengkap, email, nomor_telepon, username, password) 
                         VALUES 
-                        ('$nama', '$email', '$telepon', '$username', '$password', '$tanggal_bergabung')");
+                        ('$nama', '$email', '$telepon', '$username', '$password')");
 
     if ($simpan) {
         echo "<script>

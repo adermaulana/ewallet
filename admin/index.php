@@ -18,6 +18,13 @@ if (!isset($_SESSION['id_admin'])) {
     exit();
 }
 
+//total pelanggan
+$pelanggan = "SELECT COUNT(*) as id_pengguna FROM pengguna";
+$resultpelanggan = $koneksi->query($pelanggan);
+$rowpelanggan = $resultpelanggan->fetch_assoc();
+$jumlah_pelanggan = $rowpelanggan["id_pengguna"];
+
+
 
 ?>
 <!doctype html>
@@ -184,7 +191,7 @@ if (!isset($_SESSION['id_admin'])) {
 							<div class="d-flex align-items-center">
 								<div>
 									<p class="mb-0 text-secondary">Total Pengguna</p>
-									<h4 class="my-1 text-info"></h4>
+									<h4 class="my-1 text-info"><?= $jumlah_pelanggan ?></h4>
 
 								</div>
 								<div class="widgets-icons-2 rounded-circle bg-gradient-blues text-white ms-auto"><i class='bx bxs-user'></i>
@@ -235,32 +242,27 @@ if (!isset($_SESSION['id_admin'])) {
 					</div>
                          <div class="card-body">
 						 <div class="table-responsive">
-						   <table class="table align-middle mb-0">
+						   <table id="example" class="table table-striped table-bordered">
 							<thead class="table-light">
 							 <tr>
 							   <th>No</th>
 							   <th>Nama</th>
 							   <th>Email</th>
 							   <th>Telepon</th>
-							   <th>Tanggal Bergabung</th>
 							 </tr>
 							 </thead>
 							 <tbody>
 							        <?php
                                         $no = 1;
-                                        $tampil = mysqli_query($koneksi, "SELECT * FROM pengguna");
+                                        $tampil = mysqli_query($koneksi, "SELECT * FROM pengguna LIMIT 10");
                                         while($data = mysqli_fetch_array($tampil)):
                                     ?>
 							 <tr>
 										<td><?= $no++ ?></td>
-										<td><?= $data['nama'] ?></td>
+										<td><?= $data['nama_lengkap'] ?></td>
 										<td><?= $data['email'] ?></td>
-										<td><?= $data['telepon'] ?></td>
-									<?php
-									$days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-									$day = date('w', strtotime($data['tanggal_bergabung'])); // 0-6 (Minggu-Sabtu)
-									?>
-									<td><?= $days[$day].', '.date('d F Y', strtotime($data['tanggal_bergabung'])) ?></td>
+										<td><?= $data['nomor_telepon'] ?></td>
+
 							 </tr>
 							            <?php
                                             endwhile; 
