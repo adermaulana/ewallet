@@ -21,7 +21,7 @@ if (!isset($_SESSION['id_admin'])) {
 
 if(isset($_GET['hal']) == "hapus"){
 
-    $hapus = mysqli_query($koneksi, "DELETE FROM pengguna WHERE id = '$_GET[id]'");
+    $hapus = mysqli_query($koneksi, "DELETE FROM pengguna WHERE id_pengguna = '$_GET[id]'");
   
     if($hapus){
         echo "<script>
