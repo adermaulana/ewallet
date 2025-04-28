@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 21, 2025 at 09:49 AM
+-- Generation Time: Apr 28, 2025 at 02:06 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -58,13 +58,6 @@ CREATE TABLE `pengguna` (
   `saldo` decimal(15,2) DEFAULT 0.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `pengguna`
---
-
-INSERT INTO `pengguna` (`id_pengguna`, `username`, `password`, `email`, `nama_lengkap`, `nomor_telepon`, `nomor_rekening`, `saldo`) VALUES
-(1, 'udil', '70ab0f4e661e3022bfe73e95c72cb7e6', 'udil@gmail.com', 'Udil', '085439484', NULL, 0.00);
-
 -- --------------------------------------------------------
 
 --
@@ -77,7 +70,7 @@ CREATE TABLE `riwayat_transfer` (
   `id_penerima` int(11) NOT NULL,
   `jumlah` decimal(15,2) NOT NULL,
   `deskripsi` text DEFAULT NULL,
-  `status` enum('pending','selesai','gagal') DEFAULT 'pending',
+  `status` enum('pending','sukses','gagal') DEFAULT 'pending',
   `tanggal_transfer` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -91,10 +84,11 @@ CREATE TABLE `top_up` (
   `id_top_up` int(11) NOT NULL,
   `id_pengguna` int(11) NOT NULL,
   `jumlah` decimal(15,2) NOT NULL,
-  `metode_pembayaran` enum('transfer_bank','kartu_kredit','e-wallet') NOT NULL,
+  `metode_pembayaran` enum('Bank Transfer','E-Wallet','Kartu Kredit','Virtual Account') NOT NULL,
   `nomor_referensi` varchar(50) DEFAULT NULL,
   `status` enum('pending','selesai','gagal') DEFAULT 'pending',
-  `tanggal_top_up` timestamp NOT NULL DEFAULT current_timestamp()
+  `tanggal_top_up` timestamp NOT NULL DEFAULT current_timestamp(),
+  `bukti_pembayaran` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -106,11 +100,11 @@ CREATE TABLE `top_up` (
 CREATE TABLE `transaksi` (
   `id_transaksi` int(11) NOT NULL,
   `id_pengguna` int(11) NOT NULL,
-  `jenis_transaksi` enum('top_up','transfer','terima') NOT NULL,
+  `jenis_transaksi` enum('top_up','transfer') NOT NULL,
   `jumlah` decimal(15,2) NOT NULL,
   `id_penerima` int(11) DEFAULT NULL,
   `deskripsi` text DEFAULT NULL,
-  `status` enum('pending','selesai','gagal') DEFAULT 'pending',
+  `status` enum('pending','sukses','gagal') DEFAULT 'pending',
   `tanggal_transaksi` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -169,7 +163,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `pengguna`
 --
 ALTER TABLE `pengguna`
-  MODIFY `id_pengguna` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_pengguna` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `riwayat_transfer`
@@ -181,13 +175,13 @@ ALTER TABLE `riwayat_transfer`
 -- AUTO_INCREMENT for table `top_up`
 --
 ALTER TABLE `top_up`
-  MODIFY `id_top_up` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_top_up` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `transaksi`
 --
 ALTER TABLE `transaksi`
-  MODIFY `id_transaksi` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_transaksi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Constraints for dumped tables
@@ -197,21 +191,21 @@ ALTER TABLE `transaksi`
 -- Constraints for table `riwayat_transfer`
 --
 ALTER TABLE `riwayat_transfer`
-  ADD CONSTRAINT `riwayat_transfer_ibfk_1` FOREIGN KEY (`id_pengirim`) REFERENCES `pengguna` (`id_pengguna`),
-  ADD CONSTRAINT `riwayat_transfer_ibfk_2` FOREIGN KEY (`id_penerima`) REFERENCES `pengguna` (`id_pengguna`);
+  ADD CONSTRAINT `riwayat_transfer_ibfk_1` FOREIGN KEY (`id_pengirim`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `riwayat_transfer_ibfk_2` FOREIGN KEY (`id_penerima`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `top_up`
 --
 ALTER TABLE `top_up`
-  ADD CONSTRAINT `top_up_ibfk_1` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`);
+  ADD CONSTRAINT `top_up_ibfk_1` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `transaksi`
 --
 ALTER TABLE `transaksi`
-  ADD CONSTRAINT `transaksi_ibfk_1` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`),
-  ADD CONSTRAINT `transaksi_ibfk_2` FOREIGN KEY (`id_penerima`) REFERENCES `pengguna` (`id_pengguna`);
+  ADD CONSTRAINT `transaksi_ibfk_1` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `transaksi_ibfk_2` FOREIGN KEY (`id_penerima`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

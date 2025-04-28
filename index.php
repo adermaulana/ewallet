@@ -38,7 +38,7 @@
 
          } else if($cekPengguna > 0) {
 			$admin_data = mysqli_fetch_assoc($loginPengguna);
-			$_SESSION['id_pengguna'] = $admin_data['id'];
+			$_SESSION['id_pengguna'] = $admin_data['id_pengguna'];
 			$_SESSION['nama_pengguna'] = $admin_data['nama_lengkap'];
 			$_SESSION['username_pengguna'] = $username;
 			$_SESSION['status'] = "login";

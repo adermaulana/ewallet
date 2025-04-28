@@ -13,7 +13,15 @@ if ($_SESSION['status'] != 'login') {
     header('location:../');
 }
 
+$query = mysqli_query($koneksi, "SELECT saldo, nomor_rekening FROM pengguna WHERE id_pengguna = '$id_pengguna'");
+$data_pengguna = mysqli_fetch_assoc($query);
+$saldo = $data_pengguna['saldo'] ?? 0;
+$no_rekening = $data_pengguna['no_rekening'] ?? 'Belum terdaftar';
 
+// Format saldo ke Rupiah
+function formatRupiah($angka) {
+    return 'Rp ' . number_format($angka, 0, ',', '.');
+}
 
 ?>
 <!doctype html>
@@ -43,7 +51,7 @@ if ($_SESSION['status'] != 'login') {
 	<link rel="stylesheet" href="../assets/css/dark-theme.css"/>
 	<link rel="stylesheet" href="../assets/css/semi-dark.css"/>
 	<link rel="stylesheet" href="../assets/css/header-colors.css"/>
-	<title>Dashboard Admin</title>
+	<title>Dashboard Pengguna</title>
 </head>
 
 <body>
@@ -178,21 +186,21 @@ if ($_SESSION['status'] != 'login') {
         </div>
 
         <!-- Wallet Balance Card -->
-        <div class="card bg-primary text-white mb-4">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="mb-1">Saldo</p>
-                        <h2 class="fw-bold mb-2 text-dark">Rp 5,250,000</h2>
-                        <p class="small mb-0">Akun: 23943927890</p>
-                    </div>
-                    <div class="text-end">
-                        <button class="btn btn-light me-2">Top Up</button>
-                        <button class="btn btn-outline-light">Transfer</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+		<div class="card bg-primary text-white mb-4">
+			<div class="card-body">
+				<div class="d-flex justify-content-between align-items-center">
+					<div>
+						<p class="mb-1">Saldo</p>
+						<h2 class="fw-bold mb-2 text-dark"><?= formatRupiah($saldo) ?></h2>
+						<p class="small mb-0">Akun: <?= $no_rekening ?></p>
+					</div>
+					<div class="text-end">
+						<button class="btn btn-light me-2">Top Up</button>
+						<button class="btn btn-outline-light">Transfer</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
         <!-- Stats Cards -->
         <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">

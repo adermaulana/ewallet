@@ -4,33 +4,24 @@ include '../koneksi.php';
 
 session_start();
 
-if($_SESSION['status'] != 'login'){
+$id_pengguna = $_SESSION['id_pengguna'];
 
+if ($_SESSION['status'] != 'login') {
     session_unset();
     session_destroy();
 
-    header("location:../");
-
+    header('location:../');
 }
 
-if (!isset($_SESSION['id_admin'])) {
-    header('Location:../');
-    exit();
+$query = mysqli_query($koneksi, "SELECT saldo, nomor_rekening FROM pengguna WHERE id_pengguna = '$id_pengguna'");
+$data_pengguna = mysqli_fetch_assoc($query);
+$saldo = $data_pengguna['saldo'] ?? 0;
+$no_rekening = $data_pengguna['no_rekening'] ?? 'Belum terdaftar';
+
+// Format saldo ke Rupiah
+function formatRupiah($angka) {
+    return 'Rp ' . number_format($angka, 0, ',', '.');
 }
-
-
-if(isset($_GET['hal']) == "hapus"){
-
-    $hapus = mysqli_query($koneksi, "DELETE FROM pengguna WHERE id = '$_GET[id]'");
-  
-    if($hapus){
-        echo "<script>
-        alert('Hapus data sukses!');
-        document.location='pengguna.php';
-        </script>";
-    }
-  }
-
 
 ?>
 <!doctype html>
@@ -48,7 +39,6 @@ if(isset($_GET['hal']) == "hapus"){
 	<link href="../assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
 	<link href="../assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet"/>
 	<link href="../assets/plugins/datatable/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
-
 	<!-- loader-->
 	<link href="../assets/css/pace.min.css" rel="stylesheet"/>
 	<script src="../assets/js/pace.min.js"></script>
@@ -62,31 +52,7 @@ if(isset($_GET['hal']) == "hapus"){
 	<link rel="stylesheet" href="../assets/css/dark-theme.css"/>
 	<link rel="stylesheet" href="../assets/css/semi-dark.css"/>
 	<link rel="stylesheet" href="../assets/css/header-colors.css"/>
-	<title>Dashboard Admin</title>
-
-    <style>
-        /* Warna untuk status */
-        .status-pending {
-            background-color: #fff3cd !important; /* Kuning muda */
-            color: #856404;
-        }
-        .status-sukses {
-            background-color: #d4edda !important; /* Hijau muda */
-            color: #155724;
-        }
-        .status-gagal {
-            background-color: #f8d7da !important; /* Merah muda */
-            color: #721c24;
-        }
-        
-        /* Style untuk dropdown */
-        .status-select {
-            transition: all 0.3s ease;
-            border: 1px solid #ddd;
-            font-weight: 500;
-        }
-    </style>
-
+	<title>Dashboard Pengguna</title>
 </head>
 
 <body>
@@ -99,7 +65,7 @@ if(isset($_GET['hal']) == "hapus"){
 					<img src="../assets/images/logo-icon.png" class="logo-icon" alt="logo icon">
 				</div>
 				<div>
-					<h4 class="logo-text">Admin</h4>
+					<h4 class="logo-text">Pengguna</h4>
 				</div>
 				<div class="toggle-icon ms-auto"><i class='bx bx-arrow-back'></i>
 				</div>
@@ -118,12 +84,12 @@ if(isset($_GET['hal']) == "hapus"){
 					<a href="javascript:;" class="has-arrow">
 						<div class="parent-icon"><i class='bx bx-user'></i>
 						</div>
-						<div class="menu-title">Kelola Pengguna</div>
+						<div class="menu-title">Kelola Top Up</div>
 					</a>
 					<ul>
-						<li> <a href="pengguna.php"><i class='bx bx-radio-circle'></i>Lihat Pengguna</a>
+						<li> <a href="topup.php"><i class='bx bx-radio-circle'></i>Riwayat Top Up</a>
 						</li>
-						<li> <a href="tambahpengguna.php"><i class='bx bx-radio-circle'></i>Tambah Pengguna</a>
+						<li> <a href="tambahtopup.php"><i class='bx bx-radio-circle'></i>Top Up</a>
 						</li>
 					</ul>
 				</li>
@@ -131,12 +97,10 @@ if(isset($_GET['hal']) == "hapus"){
 					<a class="has-arrow" href="javascript:;">
 						<div class="parent-icon"><i class='bx bx-bookmark-heart'></i>
 						</div>
-						<div class="menu-title">Kelola Transaksi</div>
+						<div class="menu-title">Transfer</div>
 					</a>
 					<ul>
-						<li> <a href="transaksi.php"><i class='bx bx-radio-circle'></i>Lihat Transaksi</a>
-						</li>
-						<li> <a href="tambahtransaksi.php"><i class='bx bx-radio-circle'></i>Tambah Transaksi (Top Up)</a>
+						<li> <a href="transfer.php"><i class='bx bx-radio-circle'></i>Transfer Uang</a>
 						</li>
 					</ul>
 				</li>
@@ -144,10 +108,10 @@ if(isset($_GET['hal']) == "hapus"){
 					<a class="has-arrow" href="javascript:;">
 						<div class="parent-icon"><i class="bx bx-repeat"></i>
 						</div>
-						<div class="menu-title">Laporan</div>
+						<div class="menu-title">Riwayat Transfer</div>
 					</a>
 					<ul>
-						<li> <a href="laporan.php"><i class='bx bx-radio-circle'></i>Lihat Laporan</a>
+						<li> <a href="laporan.php"><i class='bx bx-radio-circle'></i>Lihat Riwayat Transfer</a>
 						</li>
 					</ul>
 				</li>
@@ -201,7 +165,7 @@ if(isset($_GET['hal']) == "hapus"){
 						<a class="d-flex align-items-center nav-link dropdown-toggle gap-3 dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 							<img src="../assets/images/avatars/avatar-2.png" class="user-img" alt="user avatar">
 							<div class="user-info">
-								<p class="user-name mb-0"><?= $_SESSION['nama_admin'] ?></p>
+								<p class="user-name mb-0"><?= $_SESSION['nama_pengguna'] ?></p>
 							</div>
 						</a>
 						<ul class="dropdown-menu dropdown-menu-end">
@@ -213,7 +177,7 @@ if(isset($_GET['hal']) == "hapus"){
 			</div>
 		</header>
 		<!--end header -->
-		<!--start page wrapper -->
+
 		<div class="page-wrapper">
 			<div class="page-content">
 				<!--breadcrumb-->
@@ -234,84 +198,69 @@ if(isset($_GET['hal']) == "hapus"){
 				<div class="card">
 					<div class="card-body">
 						<div class="table-responsive">
-                        <table id="example" class="table table-striped table-bordered" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Tanggal Transaksi</th>
-                                    <th>Jenis Transaksi</th>
-                                    <th>Nama Pengguna</th>
-                                    <th>Jumlah</th>
-                                    <th>Nama Penerima</th>
-                                    <th>Deskripsi</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <?php
-                                $no = 1;
-                                $tampil = mysqli_query($koneksi, 
-                                    "SELECT t.*, p1.nama_lengkap as nama_pengguna, p2.nama_lengkap as nama_penerima 
-                                    FROM transaksi t
-                                    LEFT JOIN pengguna p1 ON t.id_pengguna = p1.id_pengguna
-                                    LEFT JOIN pengguna p2 ON t.id_penerima = p2.id_pengguna");
-                                while($data = mysqli_fetch_array($tampil)):
-                            ?>
-                                <tr>
-                                    <td><?= $no++ ?></td>
-                                    <td><?= $data['tanggal_transaksi'] ?></td>
-                                    <td><?= $data['jenis_transaksi'] ?></td>
-                                    <td><?= $data['nama_pengguna'] ?></td>
-                                    <td><?= $data['jumlah'] ?></td>
-                                    <td><?= $data['nama_penerima'] ?></td>
-                                    <td><?= $data['deskripsi'] ?></td>
-                                    <td>
-										<?php if($data['jenis_transaksi'] == 'transfer'): ?>
-											<button class="btn btn-sm btn-<?php 
-												echo $data['status'] == 'pending' ? 'warning' : 
-													($data['status'] == 'sukses' ? 'success' : 'danger'); 
-											?>" disabled>
-												<?= ucfirst($data['status']) ?>
-											</button>
+						<table id="example" class="table table-striped table-bordered" style="width:100%">
+							<thead>
+								<tr>
+									<th>No</th>
+									<th>Tanggal Top Up</th>
+									<th>Nomor Referensi</th>
+									<th>Jumlah</th>
+									<th>Metode Pembayaran</th>
+									<th>Bukti Pembayaran</th>
+									<th>Status</th>
+								</tr>
+							</thead>
+							<tbody>
+							<?php
+								$no = 1;
+								$tampil = mysqli_query($koneksi, 
+									"SELECT * FROM top_up WHERE id_pengguna = '$id_pengguna' ORDER BY tanggal_top_up DESC");
+								while($data = mysqli_fetch_array($tampil)):
+							?>
+								<tr>
+									<td><?= $no++ ?></td>
+									<td><?= date('d/m/Y H:i', strtotime($data['tanggal_top_up'])) ?></td>
+									<td><?= $data['nomor_referensi'] ?></td>
+									<td>Rp <?= number_format($data['jumlah'], 0, ',', '.') ?></td>
+									<td><?= ucfirst($data['metode_pembayaran']) ?></td>
+									<td>
+										<?php if(!empty($data['bukti_pembayaran'])): ?>
+											<a href="uploads/<?= $data['bukti_pembayaran'] ?>" target="_blank" class="btn btn-sm btn-primary">Lihat Bukti</a>
 										<?php else: ?>
-											<?php if ($data['status'] == 'sukses' || $data['status'] == 'gagal'): ?>
-												<!-- Tampilkan button disabled untuk status sukses/gagal -->
-												<button class="btn btn-sm status-<?= $data['status'] ?>" disabled>
-													<?= ucfirst($data['status']) ?> <!-- Menampilkan "Sukses" atau "Gagal" -->
-												</button>
-											<?php else: ?>
-												<!-- Tampilkan dropdown select untuk status pending -->
-												<select class="btn btn-sm status-select status-<?= $data['status'] ?>" 
-														data-id="<?= $data['id_transaksi'] ?>">
-													<option value="pending" <?= $data['status'] == 'pending' ? 'selected' : '' ?>>Pending</option>
-													<option value="sukses" <?= $data['status'] == 'sukses' ? 'selected' : '' ?>>Sukses</option>
-													<option value="gagal" <?= $data['status'] == 'gagal' ? 'selected' : '' ?>>Gagal</option>
-												</select>
-											<?php endif; ?>
+											<span class="text-muted">Tidak ada bukti</span>
 										<?php endif; ?>
 									</td>
-                                </tr>
-                            <?php endwhile; ?>
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Tanggal Transaksi</th>
-                                    <th>Jenis Transaksi</th>
-                                    <th>Nama Pengguna</th>
-                                    <th>Jumlah</th>
-                                    <th>Nama Penerima</th>
-                                    <th>Deskripsi</th>
-                                    <th>Status</th>
-                                </tr>
-                            </tfoot>
-                        </table>
+									<td>
+										<?php 
+										$status_class = '';
+										if($data['status'] == 'pending') $status_class = 'warning';
+										elseif($data['status'] == 'sukses') $status_class = 'success';
+										elseif($data['status'] == 'gagal') $status_class = 'danger';
+										?>
+										<span class="badge bg-<?= $status_class ?>"><?= ucfirst($data['status']) ?></span>
+									</td>
+								</tr>
+							<?php endwhile; ?>
+							</tbody>
+							<tfoot>
+								<tr>
+									<th>No</th>
+									<th>Tanggal Top Up</th>
+									<th>Nomor Referensi</th>
+									<th>Jumlah</th>
+									<th>Metode Pembayaran</th>
+									<th>Bukti Pembayaran</th>
+									<th>Status</th>
+								</tr>
+							</tfoot>
+						</table>
 						</div>
 					</div>
 				</div>
 
 			</div>
 		</div>
+
 		<!--end page wrapper -->
 		<!--start overlay-->
 		 <div class="overlay toggle-icon"></div>
@@ -484,53 +433,9 @@ if(isset($_GET['hal']) == "hapus"){
     <script src="../assets/plugins/vectormap/jquery-jvectormap-world-mill-en.js"></script>
 	<script src="../assets/plugins/chartjs/js/chart.js"></script>
 	<script src="../assets/js/index.js"></script>
-    <script src="../assets/plugins/datatable/js/jquery.dataTables.min.js"></script>
-    <script src="../assets/plugins/datatable/js/dataTables.bootstrap5.min.js"></script>
-
-    <script>
-$(document).ready(function() {
-    // Fungsi untuk update warna status
-    function updateStatusColor(selectElement) {
-        // Hapus semua kelas warna sebelumnya
-        $(selectElement).removeClass('status-pending status-sukses status-gagal');
-        
-        // Tambahkan kelas warna sesuai nilai terpilih
-        var status = $(selectElement).val();
-        $(selectElement).addClass('status-' + status);
-    }
-
-    // Inisialisasi warna saat pertama kali load
-    $('.status-select').each(function() {
-        updateStatusColor(this);
-    });
-
-    // Handle perubahan status
-    $('.status-select').change(function() {
-        var id_transaksi = $(this).data('id');
-        var new_status = $(this).val();
-        
-        // Update warna lokal
-        updateStatusColor(this);
-        
-        // Kirim ke server
-        $.ajax({
-            url: 'update_status.php',
-            type: 'POST',
-            data: {
-                id_transaksi: id_transaksi,
-                status: new_status
-            },
-            success: function(response) {
-                // Optional: Notifikasi sukses
-                console.log('Status updated');
-            },
-            error: function() {
-                alert('Terjadi kesalahan!');
-            }
-        });
-    });
-});
-</script>
+	<script src="../assets/plugins/datatable/js/jquery.dataTables.min.js"></script>
+	<script src="../assets/plugins/datatable/js/dataTables.bootstrap5.min.js"></script>
+	<!--app JS-->
 
 	<script>
 		$(document).ready(function() {
@@ -548,7 +453,7 @@ $(document).ready(function() {
 				.appendTo( '#example2_wrapper .col-md-6:eq(0)' );
 		} );
 	</script>
-	<!--app JS-->
+
 	<script src="../assets/js/app.js"></script>
 	<script>
 		new PerfectScrollbar(".app-container")
