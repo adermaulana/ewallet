@@ -63,6 +63,30 @@ if(isset($_GET['hal']) == "hapus"){
 	<link rel="stylesheet" href="../assets/css/semi-dark.css"/>
 	<link rel="stylesheet" href="../assets/css/header-colors.css"/>
 	<title>Dashboard Admin</title>
+
+    <style>
+        /* Warna untuk status */
+        .status-pending {
+            background-color: #fff3cd !important; /* Kuning muda */
+            color: #856404;
+        }
+        .status-sukses {
+            background-color: #d4edda !important; /* Hijau muda */
+            color: #155724;
+        }
+        .status-gagal {
+            background-color: #f8d7da !important; /* Merah muda */
+            color: #721c24;
+        }
+        
+        /* Style untuk dropdown */
+        .status-select {
+            transition: all 0.3s ease;
+            border: 1px solid #ddd;
+            font-weight: 500;
+        }
+    </style>
+
 </head>
 
 <body>
@@ -194,63 +218,77 @@ if(isset($_GET['hal']) == "hapus"){
 			<div class="page-content">
 				<!--breadcrumb-->
 				<div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-					<div class="breadcrumb-title pe-3">Pengguna</div>
+					<div class="breadcrumb-title pe-3">Transaksi</div>
 					<div class="ps-3">
 						<nav aria-label="breadcrumb">
 							<ol class="breadcrumb mb-0 p-0">
 								<li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a>
 								</li>
-								<li class="breadcrumb-item active" aria-current="page">Halaman Pengguna</li>
+								<li class="breadcrumb-item active" aria-current="page">Halaman Transaksi</li>
 							</ol>
 						</nav>
 					</div>
 				</div>
-				<!--end breadcrumb-->
-				<a class="btn btn-success" href="tambahpengguna.php">Tambah Data</a>
+
 				<hr/>
 				<div class="card">
 					<div class="card-body">
 						<div class="table-responsive">
-							<table id="example" class="table table-striped table-bordered" style="width:100%">
-								<thead>
-									<tr>
-										<th>No</th>
-										<th>Nama Pengguna</th>
-										<th>Username</th>
-										<th>No. Telepon</th>
-										<th>Aksi</th>
-									</tr>
-								</thead>
-								<tbody>
-                                <?php
-                                        $no = 1;
-                                        $tampil = mysqli_query($koneksi, "SELECT * FROM pengguna");
-                                        while($data = mysqli_fetch_array($tampil)):
-                                    ?>
-									<tr>
-										<td><?= $no++ ?></td>
-										<td><?= $data['nama_lengkap'] ?></td>
-										<td><?= $data['username'] ?></td>
-										<td><?= $data['nomor_telepon'] ?></td>
-										<td>
-                                            <a class="btn btn-warning" href="editpengguna.php?hal=edit&id=<?= $data['id_pengguna']?>">Edit</a>
-                                            <a class="btn btn-danger" onclick="return confirm('Apakah Anda Yakin Ingin Menghapus Data?')" href="pengguna.php?hal=hapus&id=<?= $data['id_pengguna']?>">Hapus</a>
-                                        </td>
-									</tr>
-                                    <?php
-                                            endwhile; 
-                                        ?>
-								</tbody>
-								<tfoot>
-									<tr>
-										<th>No</th>
-										<th>Nama Pengguna</th>
-										<th>Username</th>
-										<th>No. Telepon</th>
-										<th>Aksi</th>
-									</tr>
-								</tfoot>
-							</table>
+                        <table id="example" class="table table-striped table-bordered" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Tanggal Transaksi</th>
+                                    <th>Jenis Transaksi</th>
+                                    <th>Nama Pengguna</th>
+                                    <th>Jumlah</th>
+                                    <th>Nama Penerima</th>
+                                    <th>Deskripsi</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+                                $no = 1;
+                                $tampil = mysqli_query($koneksi, 
+                                    "SELECT t.*, p1.nama_lengkap as nama_pengguna, p2.nama_lengkap as nama_penerima 
+                                    FROM transaksi t
+                                    LEFT JOIN pengguna p1 ON t.id_pengguna = p1.id_pengguna
+                                    LEFT JOIN pengguna p2 ON t.id_penerima = p2.id_pengguna");
+                                while($data = mysqli_fetch_array($tampil)):
+                            ?>
+                                <tr>
+                                    <td><?= $no++ ?></td>
+                                    <td><?= $data['tanggal_transaksi'] ?></td>
+                                    <td><?= $data['jenis_transaksi'] ?></td>
+                                    <td><?= $data['nama_pengguna'] ?></td>
+                                    <td><?= $data['jumlah'] ?></td>
+                                    <td><?= $data['nama_penerima'] ?></td>
+                                    <td><?= $data['deskripsi'] ?></td>
+                                    <td>
+                                        <select class="form-control status-select status-<?= $data['status'] ?>" 
+                                                data-id="<?= $data['id_transaksi'] ?>">
+                                            <option value="pending" <?= $data['status'] == 'pending' ? 'selected' : '' ?>>Pending</option>
+                                            <option value="sukses" <?= $data['status'] == 'sukses' ? 'selected' : '' ?>>Sukses</option>
+                                            <option value="gagal" <?= $data['status'] == 'gagal' ? 'selected' : '' ?>>Gagal</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Tanggal Transaksi</th>
+                                    <th>Jenis Transaksi</th>
+                                    <th>Nama Pengguna</th>
+                                    <th>Jumlah</th>
+                                    <th>Nama Penerima</th>
+                                    <th>Deskripsi</th>
+                                    <th>Status</th>
+                                </tr>
+                            </tfoot>
+                        </table>
 						</div>
 					</div>
 				</div>
@@ -431,6 +469,52 @@ if(isset($_GET['hal']) == "hapus"){
 	<script src="../assets/js/index.js"></script>
     <script src="../assets/plugins/datatable/js/jquery.dataTables.min.js"></script>
     <script src="../assets/plugins/datatable/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+$(document).ready(function() {
+    // Fungsi untuk update warna status
+    function updateStatusColor(selectElement) {
+        // Hapus semua kelas warna sebelumnya
+        $(selectElement).removeClass('status-pending status-sukses status-gagal');
+        
+        // Tambahkan kelas warna sesuai nilai terpilih
+        var status = $(selectElement).val();
+        $(selectElement).addClass('status-' + status);
+    }
+
+    // Inisialisasi warna saat pertama kali load
+    $('.status-select').each(function() {
+        updateStatusColor(this);
+    });
+
+    // Handle perubahan status
+    $('.status-select').change(function() {
+        var id_transaksi = $(this).data('id');
+        var new_status = $(this).val();
+        
+        // Update warna lokal
+        updateStatusColor(this);
+        
+        // Kirim ke server
+        $.ajax({
+            url: 'update_status.php',
+            type: 'POST',
+            data: {
+                id_transaksi: id_transaksi,
+                status: new_status
+            },
+            success: function(response) {
+                // Optional: Notifikasi sukses
+                console.log('Status updated');
+            },
+            error: function() {
+                alert('Terjadi kesalahan!');
+            }
+        });
+    });
+});
+</script>
+
 	<script>
 		$(document).ready(function() {
 			$('#example').DataTable();

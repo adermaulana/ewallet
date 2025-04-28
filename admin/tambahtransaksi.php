@@ -18,21 +18,88 @@ if (!isset($_SESSION['id_admin'])) {
     exit();
 }
 
+if(isset($_POST['simpan_topup'])) {
+    // Ambil data dari form
+    $id_pengguna = $_POST['id_pengguna'];
+    $jumlah = $_POST['jumlah'];
+    $metode_pembayaran = $_POST['metode_pembayaran'];
+	$nomor_referensi = uniqid('REF-', true);
 
-if(isset($_GET['hal']) == "hapus"){
-
-    $hapus = mysqli_query($koneksi, "DELETE FROM pengguna WHERE id = '$_GET[id]'");
-  
-    if($hapus){
+	// Or, for a more proper UUID (version 4)
+	function generateUUID() {
+		// Generate 16 bytes (128 bits) of random data
+		$data = random_bytes(16);
+		
+		// Set version to 0100
+		$data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+		// Set bits 6-7 to 10
+		$data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+		
+		// Output the 36 character UUID
+		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+	}
+	
+	$nomor_referensi = generateUUID();
+    $status = $_POST['status'];
+    $tanggal_top_up = $_POST['tanggal_top_up'];
+    
+    // Mulai transaction
+    mysqli_begin_transaction($koneksi);
+    
+    try {
+        // 1. Simpan ke tabel top_up
+        $query_topup = "INSERT INTO top_up (id_pengguna, jumlah, metode_pembayaran, nomor_referensi, status, tanggal_top_up) 
+                       VALUES ('$id_pengguna', '$jumlah', '$metode_pembayaran', '$nomor_referensi', '$status', '$tanggal_top_up')";
+        
+        $result_topup = mysqli_query($koneksi, $query_topup);
+        
+        if(!$result_topup) {
+            throw new Exception("Gagal menyimpan data top-up: " . mysqli_error($koneksi));
+        }
+        
+        // 2. Simpan ke tabel transaksi
+        $id_topup = mysqli_insert_id($koneksi);
+        
+        $query_transaksi = "INSERT INTO transaksi (
+                            id_pengguna, 
+                            jenis_transaksi, 
+                            jumlah,
+                            id_penerima,
+                            deskripsi, 
+                            status,
+                            tanggal_transaksi
+                          ) VALUES (
+                            '$id_pengguna',
+                            'top_up',
+                            '$jumlah',
+                            '$id_pengguna',
+                            'Top-up saldo via $metode_pembayaran (Ref: $nomor_referensi)',
+                            '$status',
+                            '$tanggal_top_up'
+                          )";
+        
+        $result_transaksi = mysqli_query($koneksi, $query_transaksi);
+        
+        if(!$result_transaksi) {
+            throw new Exception("Gagal menyimpan data transaksi: " . mysqli_error($koneksi));
+        }
+        
+        mysqli_commit($koneksi);
+        
         echo "<script>
-        alert('Hapus data sukses!');
-        document.location='pengguna.php';
-        </script>";
+                alert('Data berhasil disimpan');
+                window.location.href = 'transaksi.php';
+              </script>";
+        
+    } catch (Exception $e) {
+        mysqli_rollback($koneksi);
+        error_log($e->getMessage());
+        echo "<script>alert('Error: ".addslashes($e->getMessage())."');</script>";
     }
-  }
-
-
+}
 ?>
+
+
 <!doctype html>
 <html lang="en">
 
@@ -55,6 +122,8 @@ if(isset($_GET['hal']) == "hapus"){
 	<!-- Bootstrap CSS -->
 	<link href="../assets/css/bootstrap.min.css" rel="stylesheet">
 	<link href="../assets/css/bootstrap-extended.css" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 	<link href="../assets/css/app.css" rel="stylesheet">
 	<link href="../assets/css/icons.css" rel="stylesheet">
@@ -194,64 +263,74 @@ if(isset($_GET['hal']) == "hapus"){
 			<div class="page-content">
 				<!--breadcrumb-->
 				<div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-					<div class="breadcrumb-title pe-3">Pengguna</div>
+					<div class="breadcrumb-title pe-3">Transaksi</div>
 					<div class="ps-3">
 						<nav aria-label="breadcrumb">
 							<ol class="breadcrumb mb-0 p-0">
 								<li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a>
 								</li>
-								<li class="breadcrumb-item active" aria-current="page">Halaman Pengguna</li>
+								<li class="breadcrumb-item active" aria-current="page">Top Up</li>
 							</ol>
 						</nav>
 					</div>
 				</div>
 				<!--end breadcrumb-->
-				<a class="btn btn-success" href="tambahpengguna.php">Tambah Data</a>
 				<hr/>
 				<div class="card">
 					<div class="card-body">
-						<div class="table-responsive">
-							<table id="example" class="table table-striped table-bordered" style="width:100%">
-								<thead>
-									<tr>
-										<th>No</th>
-										<th>Nama Pengguna</th>
-										<th>Username</th>
-										<th>No. Telepon</th>
-										<th>Aksi</th>
-									</tr>
-								</thead>
-								<tbody>
-                                <?php
-                                        $no = 1;
-                                        $tampil = mysqli_query($koneksi, "SELECT * FROM pengguna");
-                                        while($data = mysqli_fetch_array($tampil)):
-                                    ?>
-									<tr>
-										<td><?= $no++ ?></td>
-										<td><?= $data['nama_lengkap'] ?></td>
-										<td><?= $data['username'] ?></td>
-										<td><?= $data['nomor_telepon'] ?></td>
-										<td>
-                                            <a class="btn btn-warning" href="editpengguna.php?hal=edit&id=<?= $data['id_pengguna']?>">Edit</a>
-                                            <a class="btn btn-danger" onclick="return confirm('Apakah Anda Yakin Ingin Menghapus Data?')" href="pengguna.php?hal=hapus&id=<?= $data['id_pengguna']?>">Hapus</a>
-                                        </td>
-									</tr>
+                    <form method="post" action="">
+                        <div class="row">
+                            <!-- Select Pengguna -->
+                            <div class="col-md-6 mb-3">
+                                <label for="id_pengguna" class="form-label">Nama Pengguna</label>
+                                <select class="form-select" name="id_pengguna" id="single-select-field" required>
+                                    <option value="">Pilih Pengguna</option>
                                     <?php
-                                            endwhile; 
-                                        ?>
-								</tbody>
-								<tfoot>
-									<tr>
-										<th>No</th>
-										<th>Nama Pengguna</th>
-										<th>Username</th>
-										<th>No. Telepon</th>
-										<th>Aksi</th>
-									</tr>
-								</tfoot>
-							</table>
-						</div>
+                                    $query_pengguna = mysqli_query($koneksi, "SELECT id_pengguna, nama_lengkap FROM pengguna");
+                                    while ($pengguna = mysqli_fetch_array($query_pengguna)) {
+                                        echo '<option value="'.$pengguna['id_pengguna'].'">'.$pengguna['nama_lengkap'].'</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+
+                            <!-- Jumlah Top-up -->
+                            <div class="col-md-6 mb-3">
+                                <label for="jumlah" class="form-label">Jumlah Top-up</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" class="form-control" name="jumlah" id="jumlah" required min="10000">
+                                    <small class="text-muted">Minimal Rp10.000</small>
+                                </div>
+                            </div>
+
+                            <!-- Metode Pembayaran -->
+                            <div class="col-md-6 mb-3">
+                                <label for="metode_pembayaran" class="form-label">Metode Pembayaran</label>
+                                <select class="form-select" name="metode_pembayaran" id="metode_pembayaran" required>
+                                    <option value="">Pilih Metode</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="E-Wallet">E-Wallet</option>
+                                    <option value="Kartu Kredit">Kartu Kredit</option>
+                                    <option value="Virtual Account">Virtual Account</option>
+                                </select>
+                            </div>
+
+                            <!-- Status (default: pending) -->
+                            <input type="hidden" name="status" value="pending">
+
+                            <!-- Tanggal (auto) -->
+                            <input type="hidden" name="tanggal_top_up" value="<?= date('Y-m-d H:i:s') ?>">
+
+                            <!-- Tombol Submit -->
+                            <div class="col-md-12">
+                                <div class="d-md-flex d-grid align-items-center gap-3">
+                                    <button type="submit" name="simpan_topup" class="btn btn-primary px-4">Simpan</button>
+                                    <button type="reset" class="btn btn-light px-4">Reset</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
 					</div>
 				</div>
 
@@ -431,6 +510,8 @@ if(isset($_GET['hal']) == "hapus"){
 	<script src="../assets/js/index.js"></script>
     <script src="../assets/plugins/datatable/js/jquery.dataTables.min.js"></script>
     <script src="../assets/plugins/datatable/js/dataTables.bootstrap5.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+	<script src="../assets/plugins/select2/js/select2-custom.js"></script>
 	<script>
 		$(document).ready(function() {
 			$('#example').DataTable();
