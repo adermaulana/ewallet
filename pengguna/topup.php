@@ -225,9 +225,16 @@ function formatRupiah($angka) {
 									<td><?= ucfirst($data['metode_pembayaran']) ?></td>
 									<td>
 										<?php if(!empty($data['bukti_pembayaran'])): ?>
-											<a href="uploads/<?= $data['bukti_pembayaran'] ?>" target="_blank" class="btn btn-sm btn-primary">Lihat Bukti</a>
+											<a href="bukti_pembayaran/<?= $data['bukti_pembayaran'] ?>" target="_blank" class="btn btn-sm btn-primary">Lihat Bukti</a>
 										<?php else: ?>
-											<span class="text-muted">Tidak ada bukti</span>
+											<?php if($data['status'] == 'pending'): ?>
+												<button type="button" class="btn btn-sm btn-warning upload-bukti" 
+														onclick="openUploadModal('<?= $data['id_top_up'] ?>')">
+													<i class="fa fa-upload"></i> Upload Bukti
+												</button>
+											<?php else: ?>
+												<span class="text-muted">Tidak ada bukti</span>
+											<?php endif; ?>
 										<?php endif; ?>
 									</td>
 									<td>
@@ -254,6 +261,32 @@ function formatRupiah($angka) {
 								</tr>
 							</tfoot>
 						</table>
+
+						<div id="uploadBuktiModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+							<div class="modal-dialog" style="margin: 10% auto; width: 90%; max-width: 500px;">
+								<div class="modal-content" style="background-color: #fefefe; padding: 20px; border: 1px solid #888; border-radius: 5px;">
+									<div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 20px;">
+										<h5 class="modal-title">Upload Bukti Pembayaran</h5>
+										<span class="close" onclick="closeModal()" style="font-size: 24px; cursor: pointer;">&times;</span>
+									</div>
+									<form id="formUploadBukti" action="proses_upload_bukti.php" method="post" enctype="multipart/form-data">
+										<div class="modal-body">
+											<input type="hidden" name="id_top_up" id="id_top_up_upload">
+											
+											<div class="form-group" style="margin-bottom: 15px;">
+												<label for="bukti_pembayaran" style="display: block; margin-bottom: 5px;">File Bukti Pembayaran (JPG/PNG)</label>
+												<input type="file" class="form-control-file" id="bukti_pembayaran" name="bukti_pembayaran" accept="image/jpeg,image/png" required>
+												<small class="form-text text-muted" style="display: block; margin-top: 5px; font-size: 0.875em; color: #6c757d;">Ukuran maksimal file 2MB</small>
+											</div>
+										</div>
+										<div class="modal-footer" style="padding-top: 15px; border-top: 1px solid #ddd; margin-top: 15px; display: flex; justify-content: flex-end;">
+											<button type="button" class="btn btn-secondary" onclick="closeModal()" style="margin-right: 10px; padding: 6px 12px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Batal</button>
+											<button type="submit" class="btn btn-primary" style="padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Upload</button>
+										</div>
+									</form>
+								</div>
+							</div>
+						</div>
 						</div>
 					</div>
 				</div>
@@ -437,6 +470,7 @@ function formatRupiah($angka) {
 	<script src="../assets/plugins/datatable/js/dataTables.bootstrap5.min.js"></script>
 	<!--app JS-->
 
+
 	<script>
 		$(document).ready(function() {
 			$('#example').DataTable();
@@ -458,6 +492,38 @@ function formatRupiah($angka) {
 	<script>
 		new PerfectScrollbar(".app-container")
 	</script>
+
+<script>
+// Fungsi untuk membuka modal
+function openUploadModal(id_top_up) {
+    // Set nilai pada form
+    document.getElementById('id_top_up_upload').value = id_top_up;
+    
+    // Tampilkan modal
+    document.getElementById('uploadBuktiModal').style.display = 'block';
+}
+
+// Fungsi untuk menutup modal
+function closeModal() {
+    document.getElementById('uploadBuktiModal').style.display = 'none';
+}
+
+// Menutup modal jika user mengklik di luar modal
+window.onclick = function(event) {
+    var modal = document.getElementById('uploadBuktiModal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Menangani klik tombol Escape untuk menutup modal
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeModal();
+    }
+});
+</script>
+
 </body>
 
 </html>

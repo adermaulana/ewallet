@@ -234,38 +234,39 @@ if(isset($_GET['hal']) == "hapus"){
 				<div class="card">
 					<div class="card-body">
 						<div class="table-responsive">
-                        <table id="example" class="table table-striped table-bordered" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Tanggal Transaksi</th>
-                                    <th>Jenis Transaksi</th>
-                                    <th>Nama Pengguna</th>
-                                    <th>Jumlah</th>
-                                    <th>Nama Penerima</th>
-                                    <th>Deskripsi</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <?php
-                                $no = 1;
-                                $tampil = mysqli_query($koneksi, 
-                                    "SELECT t.*, p1.nama_lengkap as nama_pengguna, p2.nama_lengkap as nama_penerima 
-                                    FROM transaksi t
-                                    LEFT JOIN pengguna p1 ON t.id_pengguna = p1.id_pengguna
-                                    LEFT JOIN pengguna p2 ON t.id_penerima = p2.id_pengguna");
-                                while($data = mysqli_fetch_array($tampil)):
-                            ?>
-                                <tr>
-                                    <td><?= $no++ ?></td>
-                                    <td><?= $data['tanggal_transaksi'] ?></td>
-                                    <td><?= $data['jenis_transaksi'] ?></td>
-                                    <td><?= $data['nama_pengguna'] ?></td>
-                                    <td><?= $data['jumlah'] ?></td>
-                                    <td><?= $data['nama_penerima'] ?></td>
-                                    <td><?= $data['deskripsi'] ?></td>
-                                    <td>
+						<table id="example" class="table table-striped table-bordered" style="width:100%">
+							<thead>
+								<tr>
+									<th>No</th>
+									<th>Tanggal Transaksi</th>
+									<th>Jenis Transaksi</th>
+									<th>Nama Pengguna</th>
+									<th>Jumlah</th>
+									<th>Nama Penerima</th>
+									<th>Deskripsi</th>
+									<th>Status</th>
+									<th>Bukti Pembayaran</th>
+								</tr>
+							</thead>
+							<tbody>
+							<?php
+								$no = 1;
+								$tampil = mysqli_query($koneksi, 
+									"SELECT t.*, p1.nama_lengkap as nama_pengguna, p2.nama_lengkap as nama_penerima 
+									FROM transaksi t
+									LEFT JOIN pengguna p1 ON t.id_pengguna = p1.id_pengguna
+									LEFT JOIN pengguna p2 ON t.id_penerima = p2.id_pengguna");
+								while($data = mysqli_fetch_array($tampil)):
+							?>
+								<tr>
+									<td><?= $no++ ?></td>
+									<td><?= $data['tanggal_transaksi'] ?></td>
+									<td><?= $data['jenis_transaksi'] ?></td>
+									<td><?= $data['nama_pengguna'] ?></td>
+									<td><?= $data['jumlah'] ?></td>
+									<td><?= $data['nama_penerima'] ?></td>
+									<td><?= $data['deskripsi'] ?></td>
+									<td>
 										<?php if($data['jenis_transaksi'] == 'transfer'): ?>
 											<button class="btn btn-sm btn-<?php 
 												echo $data['status'] == 'pending' ? 'warning' : 
@@ -290,22 +291,34 @@ if(isset($_GET['hal']) == "hapus"){
 											<?php endif; ?>
 										<?php endif; ?>
 									</td>
-                                </tr>
-                            <?php endwhile; ?>
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Tanggal Transaksi</th>
-                                    <th>Jenis Transaksi</th>
-                                    <th>Nama Pengguna</th>
-                                    <th>Jumlah</th>
-                                    <th>Nama Penerima</th>
-                                    <th>Deskripsi</th>
-                                    <th>Status</th>
-                                </tr>
-                            </tfoot>
-                        </table>
+									<td>
+										<?php if(!empty($data['bukti_pembayaran'])): ?>
+											<!-- Jika bukti pembayaran sudah ada, tampilkan link untuk melihat -->
+											<a href="../pengguna/bukti_pembayaran/<?= $data['bukti_pembayaran'] ?>" target="_blank" class="btn btn-sm btn-info">
+												<i class="fa fa-eye"></i> Lihat Bukti
+											</a>
+										<?php else: ?>
+											<!-- Tampilkan pesan jika bukti belum ada -->
+											<span class="badge bg-danger">Belum Ada Bukti Pembayaran</span>
+										<?php endif; ?>
+									</td>
+								</tr>
+							<?php endwhile; ?>
+							</tbody>
+							<tfoot>
+								<tr>
+									<th>No</th>
+									<th>Tanggal Transaksi</th>
+									<th>Jenis Transaksi</th>
+									<th>Nama Pengguna</th>
+									<th>Jumlah</th>
+									<th>Nama Penerima</th>
+									<th>Deskripsi</th>
+									<th>Status</th>
+									<th>Bukti Pembayaran</th>
+								</tr>
+							</tfoot>
+						</table>
 						</div>
 					</div>
 				</div>

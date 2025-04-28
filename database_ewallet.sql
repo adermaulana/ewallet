@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 28, 2025 at 02:06 PM
+-- Generation Time: Apr 28, 2025 at 04:36 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -86,7 +86,7 @@ CREATE TABLE `top_up` (
   `jumlah` decimal(15,2) NOT NULL,
   `metode_pembayaran` enum('Bank Transfer','E-Wallet','Kartu Kredit','Virtual Account') NOT NULL,
   `nomor_referensi` varchar(50) DEFAULT NULL,
-  `status` enum('pending','selesai','gagal') DEFAULT 'pending',
+  `status` enum('pending','sukses','gagal') DEFAULT 'pending',
   `tanggal_top_up` timestamp NOT NULL DEFAULT current_timestamp(),
   `bukti_pembayaran` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -105,7 +105,8 @@ CREATE TABLE `transaksi` (
   `id_penerima` int(11) DEFAULT NULL,
   `deskripsi` text DEFAULT NULL,
   `status` enum('pending','sukses','gagal') DEFAULT 'pending',
-  `tanggal_transaksi` timestamp NOT NULL DEFAULT current_timestamp()
+  `tanggal_transaksi` timestamp NOT NULL DEFAULT current_timestamp(),
+  `bukti_pembayaran` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -163,7 +164,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `pengguna`
 --
 ALTER TABLE `pengguna`
-  MODIFY `id_pengguna` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_pengguna` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `riwayat_transfer`
@@ -175,13 +176,13 @@ ALTER TABLE `riwayat_transfer`
 -- AUTO_INCREMENT for table `top_up`
 --
 ALTER TABLE `top_up`
-  MODIFY `id_top_up` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id_top_up` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `transaksi`
 --
 ALTER TABLE `transaksi`
-  MODIFY `id_transaksi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_transaksi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Constraints for dumped tables
