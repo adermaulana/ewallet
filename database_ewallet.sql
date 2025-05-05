@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 28, 2025 at 04:36 PM
+-- Generation Time: May 05, 2025 at 09:59 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -58,6 +58,13 @@ CREATE TABLE `pengguna` (
   `saldo` decimal(15,2) DEFAULT 0.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `pengguna`
+--
+
+INSERT INTO `pengguna` (`id_pengguna`, `username`, `password`, `email`, `nama_lengkap`, `nomor_telepon`, `nomor_rekening`, `saldo`) VALUES
+(10, 'udin', '3af4c9341e31bce1f4262a326285170d', 'udin@gmail.com', 'udin', '09329', NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -90,6 +97,13 @@ CREATE TABLE `top_up` (
   `tanggal_top_up` timestamp NOT NULL DEFAULT current_timestamp(),
   `bukti_pembayaran` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `top_up`
+--
+
+INSERT INTO `top_up` (`id_top_up`, `id_pengguna`, `jumlah`, `metode_pembayaran`, `nomor_referensi`, `status`, `tanggal_top_up`, `bukti_pembayaran`) VALUES
+(19, 10, 20000.00, 'Virtual Account', 'e0136e4a-386e-404a-a275-c8f99f999a15', 'pending', '2025-05-05 00:21:51', '');
 
 -- --------------------------------------------------------
 
@@ -164,7 +178,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `pengguna`
 --
 ALTER TABLE `pengguna`
-  MODIFY `id_pengguna` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_pengguna` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `riwayat_transfer`
@@ -176,13 +190,13 @@ ALTER TABLE `riwayat_transfer`
 -- AUTO_INCREMENT for table `top_up`
 --
 ALTER TABLE `top_up`
-  MODIFY `id_top_up` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id_top_up` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `transaksi`
 --
 ALTER TABLE `transaksi`
-  MODIFY `id_transaksi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_transaksi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- Constraints for dumped tables

@@ -1,0 +1,646 @@
+<?php
+
+include '../koneksi.php';
+
+session_start();
+
+$id_pengguna = $_SESSION['id_pengguna'];
+
+if ($_SESSION['status'] != 'login') {
+    session_unset();
+    session_destroy();
+
+    header('location:../');
+}
+
+$query = mysqli_query($koneksi, "SELECT saldo, nomor_rekening FROM pengguna WHERE id_pengguna = '$id_pengguna'");
+$data_pengguna = mysqli_fetch_assoc($query);
+$current_balance = $data_pengguna['saldo'] ?? 0;
+$no_rekening = $data_pengguna['no_rekening'] ?? 'Belum terdaftar';
+
+// Format saldo ke Rupiah
+function formatRupiah($angka) {
+    return 'Rp ' . number_format($angka, 0, ',', '.');
+}
+
+?>
+<!doctype html>
+<html lang="en">
+
+<head>
+	<!-- Required meta tags -->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!--favicon-->
+	<link rel="icon" href="../assets/images/favicon-32x32.png" type="image/png"/>
+	<!--plugins-->
+	<link href="../assets/plugins/vectormap/jquery-jvectormap-2.0.2.css" rel="stylesheet"/>
+	<link href="../assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
+	<link href="../assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
+	<link href="../assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet"/>
+	<link href="../assets/plugins/datatable/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+	<!-- loader-->
+	<link href="../assets/css/pace.min.css" rel="stylesheet"/>
+	<script src="../assets/js/pace.min.js"></script>
+	<!-- Bootstrap CSS -->
+	<link href="../assets/css/bootstrap.min.css" rel="stylesheet">
+	<link href="../assets/css/bootstrap-extended.css" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+	<link href="../assets/css/app.css" rel="stylesheet">
+	<link href="../assets/css/icons.css" rel="stylesheet">
+	<!-- Theme Style CSS -->
+	<link rel="stylesheet" href="../assets/css/dark-theme.css"/>
+	<link rel="stylesheet" href="../assets/css/semi-dark.css"/>
+	<link rel="stylesheet" href="../assets/css/header-colors.css"/>
+	<title>Dashboard Pengguna</title>
+</head>
+
+<body>
+	<!--wrapper-->
+	<div class="wrapper">
+		<!--sidebar wrapper -->
+		<div class="sidebar-wrapper" data-simplebar="true">
+			<div class="sidebar-header">
+				<div>
+					<img src="../assets/images/logo-icon.png" class="logo-icon" alt="logo icon">
+				</div>
+				<div>
+					<h4 class="logo-text">Pengguna</h4>
+				</div>
+				<div class="toggle-icon ms-auto"><i class='bx bx-arrow-back'></i>
+				</div>
+			 </div>
+			<!--navigation-->
+			<ul class="metismenu" id="menu">
+				<li>
+					<a href="index.php">
+						<div class="parent-icon"><i class='bx bx-home-alt'></i>
+						</div>
+						<div class="menu-title">Dashboard</div>
+					</a>
+				</li>
+				<li class="menu-label">Fitur</li>
+				<li>
+					<a href="javascript:;" class="has-arrow">
+						<div class="parent-icon"><i class='bx bx-user'></i>
+						</div>
+						<div class="menu-title">Kelola Top Up</div>
+					</a>
+					<ul>
+						<li> <a href="topup.php"><i class='bx bx-radio-circle'></i>Riwayat Top Up</a>
+						</li>
+						<li> <a href="tambahtopup.php"><i class='bx bx-radio-circle'></i>Top Up</a>
+						</li>
+					</ul>
+				</li>
+				<li>
+					<a class="has-arrow" href="javascript:;">
+						<div class="parent-icon"><i class='bx bx-bookmark-heart'></i>
+						</div>
+						<div class="menu-title">Transfer</div>
+					</a>
+					<ul>
+						<li> <a href="transfer.php"><i class='bx bx-radio-circle'></i>Transfer Uang</a>
+						</li>
+					</ul>
+				</li>
+				<li>
+					<a class="has-arrow" href="javascript:;">
+						<div class="parent-icon"><i class="bx bx-repeat"></i>
+						</div>
+						<div class="menu-title">Riwayat Transfer</div>
+					</a>
+					<ul>
+						<li> <a href="laporan.php"><i class='bx bx-radio-circle'></i>Lihat Riwayat Transfer</a>
+						</li>
+					</ul>
+				</li>
+			</ul>
+			<!--end navigation-->
+		</div>
+		<!--end sidebar wrapper -->
+		<!--start header -->
+		<header>
+			<div class="topbar d-flex align-items-center">
+				<nav class="navbar navbar-expand gap-3">
+					<div class="mobile-toggle-menu"><i class='bx bx-menu'></i>
+					</div>
+					  <div class="top-menu ms-auto">
+						<ul class="navbar-nav align-items-center gap-1">
+							<li class="nav-item mobile-search-icon d-flex d-lg-none" data-bs-toggle="modal" data-bs-target="#SearchModal">
+								<a class="nav-link" href="avascript:;"><i class='bx bx-search'></i>
+								</a>
+							</li>
+							<li class="nav-item dark-mode d-none d-sm-flex">
+								<a class="nav-link dark-mode-icon" href="javascript:;"><i class='bx bx-moon'></i>
+								</a>
+							</li>
+
+							<li class="nav-item dropdown dropdown-app">
+								<div class="dropdown-menu dropdown-menu-end p-0">
+									<div class="app-container p-2 my-2">
+									  <div class="row gx-0 gy-2 row-cols-3 justify-content-center p-2">
+										 <div class="col">
+										 </div>
+									  </div><!--end row-->
+									</div>
+								</div>
+							</li>
+
+							<li class="nav-item dropdown dropdown-large">
+								<div class="dropdown-menu dropdown-menu-end">
+									<div class="header-notifications-list">
+									</div>
+								</div>
+							</li>
+							<li class="nav-item dropdown dropdown-large">
+								<div class="dropdown-menu dropdown-menu-end">
+									<div class="header-message-list">
+									</div>
+								</div>
+							</li>
+						</ul>
+					</div>
+					<div class="user-box dropdown px-3">
+						<a class="d-flex align-items-center nav-link dropdown-toggle gap-3 dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<img src="../assets/images/avatars/avatar-2.png" class="user-img" alt="user avatar">
+							<div class="user-info">
+								<p class="user-name mb-0"><?= $_SESSION['nama_pengguna'] ?></p>
+							</div>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end">
+							<li><a class="dropdown-item d-flex align-items-center" href="logout.php"><i class="bx bx-log-out-circle"></i><span>Logout</span></a>
+							</li>
+						</ul>
+					</div>
+				</nav>
+			</div>
+		</header>
+		<!--end header -->
+
+        <div class="page-wrapper">
+            <div class="page-content">
+                <!--breadcrumb-->
+                <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+                    <div class="breadcrumb-title pe-3">Transaksi</div>
+                    <div class="ps-3">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0 p-0">
+                                <li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Transfer</li>
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+                <!--end breadcrumb-->
+                <hr/>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Current Balance -->
+                            <div class="col-md-12 mb-4">
+                                <h5>TOTAL SALDO : <?= formatRupiah($current_balance) ?></h5>
+                            </div>
+                            
+                            <!-- QR Code Section -->
+							<div class="col-md-6 mb-4">
+								<div class="text-center">
+									<h6 class="mb-3">Transfer ke Pengguna</h6>
+									<?php
+									// Generate QR code data - combine user ID and email
+									$userData = $id_pengguna . '|' . $_SESSION['email'];
+									
+									// Include QR code library
+									include('../assets/phpqrcode/qrlib.php');
+									
+									// Path to save QR code image
+									$qrPath = '../uploads/qrcodes/';
+									if (!file_exists($qrPath)) {
+										mkdir($qrPath, 0755, true);
+									}
+									
+									$qrFile = $qrPath . 'user_' . $id_pengguna . '.png';
+									$qrRelativePath = 'uploads/qrcodes/user_' . $id_pengguna . '.png';
+									
+									// Generate QR code
+									QRcode::png($userData, $qrFile, QR_ECLEVEL_L, 10);
+									
+									// Display QR code
+									echo '<img src="' . $qrFile . '" class="img-fluid" alt="QR Code" style="max-width: 250px;">';
+									?>
+									<div class="mt-2">
+										<a href="<?php echo $qrFile; ?>" download="transfer_qrcode.png" class="btn btn-primary">Download QR Code</a>
+									</div>
+								</div>
+							</div>
+                            
+                            <!-- Transfer Form -->
+                            <div class="col-md-6">
+                                <div class="text-center p-4" >
+                                    <h6 class="mb-3">Scan QR Code</h6>
+                                    <button class="btn btn-primary mb-3" type="button" id="scanQRBtn" style="padding: 10px 20px; font-size: 16px;">
+                                        <i class="bx bx-camera" style="font-size: 24px; vertical-align: middle;"></i> 
+                                        <span style="vertical-align: middle;">Scan QR Code</span>
+                                    </button>
+                                    
+                                    <!-- Camera preview placeholder (initially hidden) -->
+                                    <div id="cameraPreviewBox" style="display: none; max-width: 250px; margin: 0 auto;">
+                                        <img src="../assets/images/qr-scan-placeholder.png" class="img-fluid" alt="Camera Preview" style="border: 1px solid #ddd;">
+                                    </div>
+                                    
+                                    <!-- Transfer Form (hidden by default) -->
+                                    <div id="transferForm" style="display: none;">
+                                        <form method="post" action="">
+                                            <div class="mb-3">
+                                                <label for="id_penerima" class="form-label">ID Penerima</label>
+                                                <input type="text" class="form-control" name="id_penerima" id="id_penerima" required readonly>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="jumlah" class="form-label">Jumlah Transfer</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">Rp</span>
+                                                    <input type="number" class="form-control" name="jumlah" id="jumlah" required min="10000">
+                                                </div>
+                                                <small class="text-muted">Minimal Rp10.000</small>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="catatan" class="form-label">Catatan (Opsional)</label>
+                                                <textarea class="form-control" name="catatan" id="catatan" rows="2"></textarea>
+                                            </div>
+                                            
+                                            <!-- Hidden fields -->
+                                            <input type="hidden" name="id_pengirim" value="<?= $id_pengguna ?>">
+                                            <input type="hidden" name="tanggal_transfer" value="<?= date('Y-m-d H:i:s') ?>">
+                                            <input type="hidden" name="status" value="pending">
+                                            
+                                            <div class="d-grid gap-2">
+                                                <button type="submit" name="transfer" class="btn btn-primary">Transfer</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Code Scanner Modal -->
+        <div class="modal fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="qrScannerModalLabel">Scan QR Code</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center">
+                            <video id="qrScanner" width="100%" style="border: 1px solid #ddd;"></video>
+                            <div id="scanResult" class="mt-3"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+		<!--end page wrapper -->
+		<!--start overlay-->
+		 <div class="overlay toggle-icon"></div>
+		<!--end overlay-->
+		<!--Start Back To Top Button-->
+		  <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
+		<!--End Back To Top Button-->
+		<footer class="page-footer">
+			<p class="mb-0">Copyright © 2022. All right reserved.</p>
+		</footer>
+	</div>
+	<!--end wrapper-->
+
+
+	<!-- search modal -->
+    <div class="modal" id="SearchModal" tabindex="-1">
+		<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-md-down">
+		  <div class="modal-content">
+			<div class="modal-header gap-2">
+			  <div class="position-relative popup-search w-100">
+				<input class="form-control form-control-lg ps-5 border border-3 border-primary" type="search" placeholder="Search">
+				<span class="position-absolute top-50 search-show ms-3 translate-middle-y start-0 top-50 fs-4"><i class='bx bx-search'></i></span>
+			  </div>
+			  <button type="button" class="btn-close d-md-none" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				<div class="search-list">
+				   <p class="mb-1">Html Templates</p>
+				   <div class="list-group">
+					  <a href="javascript:;" class="list-group-item list-group-item-action active align-items-center d-flex gap-2 py-1"><i class='bx bxl-angular fs-4'></i>Best Html Templates</a>
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-vuejs fs-4'></i>Html5 Templates</a>
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-magento fs-4'></i>Responsive Html5 Templates</a>
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-shopify fs-4'></i>eCommerce Html Templates</a>
+				   </div>
+				   <p class="mb-1 mt-3">Web Designe Company</p>
+				   <div class="list-group">
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-windows fs-4'></i>Best Html Templates</a>
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-dropbox fs-4' ></i>Html5 Templates</a>
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-opera fs-4'></i>Responsive Html5 Templates</a>
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-wordpress fs-4'></i>eCommerce Html Templates</a>
+				   </div>
+				   <p class="mb-1 mt-3">Software Development</p>
+				   <div class="list-group">
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-mailchimp fs-4'></i>Best Html Templates</a>
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-zoom fs-4'></i>Html5 Templates</a>
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-sass fs-4'></i>Responsive Html5 Templates</a>
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-vk fs-4'></i>eCommerce Html Templates</a>
+				   </div>
+				   <p class="mb-1 mt-3">Online Shoping Portals</p>
+				   <div class="list-group">
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-slack fs-4'></i>Best Html Templates</a>
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-skype fs-4'></i>Html5 Templates</a>
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-twitter fs-4'></i>Responsive Html5 Templates</a>
+					  <a href="javascript:;" class="list-group-item list-group-item-action align-items-center d-flex gap-2 py-1"><i class='bx bxl-vimeo fs-4'></i>eCommerce Html Templates</a>
+				   </div>
+				</div>
+			</div>
+		  </div>
+		</div>
+	  </div>
+    <!-- end search modal -->
+
+
+
+
+	<!--start switcher-->
+	<div class="switcher-wrapper">
+		<div class="switcher-btn"> <i class='bx bx-cog bx-spin'></i>
+		</div>
+		<div class="switcher-body">
+			<div class="d-flex align-items-center">
+				<h5 class="mb-0 text-uppercase">Theme Customizer</h5>
+				<button type="button" class="btn-close ms-auto close-switcher" aria-label="Close"></button>
+			</div>
+			<hr/>
+			<h6 class="mb-0">Theme Styles</h6>
+			<hr/>
+			<div class="d-flex align-items-center justify-content-between">
+				<div class="form-check">
+					<input class="form-check-input" type="radio" name="flexRadioDefault" id="lightmode" checked>
+					<label class="form-check-label" for="lightmode">Light</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="radio" name="flexRadioDefault" id="darkmode">
+					<label class="form-check-label" for="darkmode">Dark</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="radio" name="flexRadioDefault" id="semidark">
+					<label class="form-check-label" for="semidark">Semi Dark</label>
+				</div>
+			</div>
+			<hr/>
+			<div class="form-check">
+				<input class="form-check-input" type="radio" id="minimaltheme" name="flexRadioDefault">
+				<label class="form-check-label" for="minimaltheme">Minimal Theme</label>
+			</div>
+			<hr/>
+			<h6 class="mb-0">Header Colors</h6>
+			<hr/>
+			<div class="header-colors-indigators">
+				<div class="row row-cols-auto g-3">
+					<div class="col">
+						<div class="indigator headercolor1" id="headercolor1"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor2" id="headercolor2"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor3" id="headercolor3"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor4" id="headercolor4"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor5" id="headercolor5"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor6" id="headercolor6"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor7" id="headercolor7"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor8" id="headercolor8"></div>
+					</div>
+				</div>
+			</div>
+			<hr/>
+			<h6 class="mb-0">Sidebar Colors</h6>
+			<hr/>
+			<div class="header-colors-indigators">
+				<div class="row row-cols-auto g-3">
+					<div class="col">
+						<div class="indigator sidebarcolor1" id="sidebarcolor1"></div>
+					</div>
+					<div class="col">
+						<div class="indigator sidebarcolor2" id="sidebarcolor2"></div>
+					</div>
+					<div class="col">
+						<div class="indigator sidebarcolor3" id="sidebarcolor3"></div>
+					</div>
+					<div class="col">
+						<div class="indigator sidebarcolor4" id="sidebarcolor4"></div>
+					</div>
+					<div class="col">
+						<div class="indigator sidebarcolor5" id="sidebarcolor5"></div>
+					</div>
+					<div class="col">
+						<div class="indigator sidebarcolor6" id="sidebarcolor6"></div>
+					</div>
+					<div class="col">
+						<div class="indigator sidebarcolor7" id="sidebarcolor7"></div>
+					</div>
+					<div class="col">
+						<div class="indigator sidebarcolor8" id="sidebarcolor8"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!--end switcher-->
+	<!-- Bootstrap JS -->
+	<script src="../assets/js/bootstrap.bundle.min.js"></script>
+	<!--plugins-->
+	<script src="../assets/js/jquery.min.js"></script>
+	<script src="../assets/plugins/simplebar/js/simplebar.min.js"></script>
+	<script src="../assets/plugins/metismenu/js/metisMenu.min.js"></script>
+	<script src="../assets/plugins/perfect-scrollbar/js/perfect-scrollbar.js"></script>
+	<script src="../assets/plugins/vectormap/jquery-jvectormap-2.0.2.min.js"></script>
+    <script src="../assets/plugins/vectormap/jquery-jvectormap-world-mill-en.js"></script>
+	<script src="../assets/plugins/chartjs/js/chart.js"></script>
+	<script src="../assets/js/index.js"></script>
+	<script src="../assets/plugins/datatable/js/jquery.dataTables.min.js"></script>
+	<script src="../assets/plugins/datatable/js/dataTables.bootstrap5.min.js"></script>
+	<!--app JS-->
+
+
+	<script>
+		$(document).ready(function() {
+			$('#example').DataTable();
+		  } );
+	</script>
+	<script>
+		$(document).ready(function() {
+			var table = $('#example2').DataTable( {
+				lengthChange: false,
+				buttons: [ 'copy', 'excel', 'pdf', 'print']
+			} );
+		 
+			table.buttons().container()
+				.appendTo( '#example2_wrapper .col-md-6:eq(0)' );
+		} );
+	</script>
+
+	<script src="../assets/js/app.js"></script>
+	<script>
+		new PerfectScrollbar(".app-container")
+	</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+ // QR Code Scanner Functionality dengan penanganan izin yang lebih baik
+document.getElementById('scanQRBtn').addEventListener('click', function() {
+    // Show camera preview placeholder first
+    document.getElementById('cameraPreviewBox').style.display = 'block';
+    
+    // Then show the modal
+    const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
+    modal.show();
+    
+    // Start scanner when modal is shown
+    document.getElementById('qrScannerModal').addEventListener('shown.bs.modal', function() {
+        startQRScanner();
+    });
+    
+    // Stop scanner when modal is hidden
+    document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', function() {
+        stopQRScanner();
+    });
+});
+
+let videoStream = null;
+let interval = null;
+
+function startQRScanner() {
+    const video = document.getElementById('qrScanner');
+    const scanResult = document.getElementById('scanResult');
+    
+    // Menampilkan instruksi izin terlebih dahulu
+    scanResult.innerHTML = '<div class="alert alert-info">Anda mungkin perlu memberikan izin kamera. Klik "Allow" atau "Izinkan" pada permintaan izin browser.</div>';
+    
+    // Cek apakah getUserMedia didukung browser
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        scanResult.innerHTML = '<div class="alert alert-danger">Browser Anda tidak mendukung akses kamera. Gunakan browser modern seperti Chrome atau Firefox versi terbaru.</div>';
+        return;
+    }
+    
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        } 
+    })
+    .then(function(stream) {
+        videoStream = stream;
+        video.srcObject = stream;
+        
+        // Tambahkan event listener untuk mendeteksi ketika video siap diputar
+        video.onloadedmetadata = function(e) {
+            video.play();
+            scanResult.innerHTML = '<div class="alert alert-success">Kamera aktif. Arahkan pada QR Code.</div>';
+            
+            interval = setInterval(function() {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    try {
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: "dontInvert",
+                        });
+                        
+                        if (code) {
+                            // Extract user ID from QR code data (format: "id|email")
+                            const qrData = code.data.split('|');
+                            const userId = qrData[0];
+                            
+                            // Fill the recipient ID field
+                            document.getElementById('id_penerima').value = userId;
+                            
+                            // Show success message
+                            scanResult.innerHTML = '<div class="alert alert-success">QR Code berhasil dipindai!</div>';
+                            
+                            // Hide camera preview box and show transfer form
+                            document.getElementById('cameraPreviewBox').style.display = 'none';
+                            document.getElementById('transferForm').style.display = 'block';
+                            
+                            // Stop scanner after 2 seconds
+                            setTimeout(function() {
+                                stopQRScanner();
+                                bootstrap.Modal.getInstance(document.getElementById('qrScannerModal')).hide();
+                            }, 2000);
+                        }
+                    } catch (error) {
+                        console.error("Error scanning QR code:", error);
+                    }
+                }
+            }, 100);
+        };
+    })
+    .catch(function(err) {
+        console.error("Error accessing camera: ", err);
+        
+        // Tampilkan pesan error yang lebih spesifik
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            scanResult.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5>Izin kamera ditolak</h5>
+                    <p>Untuk menggunakan fitur ini, Anda perlu memberikan izin kamera. Ikuti langkah ini:</p>
+                    <ol>
+                        <li>Klik ikon kunci/info di address bar browser</li>
+                        <li>Pilih "Izin" atau "Permissions"</li>
+                        <li>Izinkan akses kamera</li>
+                        <li>Refresh halaman ini</li>
+                    </ol>
+                    <p><strong>Untuk Localhost:</strong> Jika Anda menggunakan localhost, browser mungkin memblokir akses. Lihat dokumentasi untuk mengaktifkan kamera di localhost.</p>
+                </div>`;
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            scanResult.innerHTML = '<div class="alert alert-danger">Tidak ada kamera ditemukan. Pastikan perangkat Anda memiliki kamera dan tidak digunakan aplikasi lain.</div>';
+        } else {
+            scanResult.innerHTML = '<div class="alert alert-danger">Error: ' + err.message + '. Coba refresh halaman atau gunakan browser lain.</div>';
+        }
+    });
+}
+
+function stopQRScanner() {
+    const video = document.getElementById('qrScanner');
+    if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+    }
+    if (interval) {
+        clearInterval(interval);
+    }
+}
+</script>
+
+</body>
+
+</html>
