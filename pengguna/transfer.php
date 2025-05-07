@@ -197,6 +197,24 @@ function formatRupiah($angka) {
                 <hr/>
                 <div class="card">
                     <div class="card-body">
+
+						<?php if(isset($_SESSION['transfer_error'])): ?>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bx bx-error-circle me-1"></i> <?= $_SESSION['transfer_error'] ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                            <?php unset($_SESSION['transfer_error']); ?>
+                        <?php endif; ?>
+                        
+                        <!-- Display Success Messages -->
+                        <?php if(isset($_SESSION['transfer_success'])): ?>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bx bx-check-circle me-1"></i> <?= $_SESSION['transfer_success'] ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                            <?php unset($_SESSION['transfer_success']); ?>
+                        <?php endif; ?>
+
                         <div class="row">
                             <!-- Current Balance -->
                             <div class="col-md-12 mb-4">
@@ -666,7 +684,7 @@ function loadRecipientData(userId) {
                         <img src="../assets/images/avatars/avatar-2.png" class="rounded-circle" width="60" height="60" alt="User Avatar">
                         <div class="ms-3">
                             <h5>${response.data.nama_lengkap}</h5>
-                            <p class="mb-0 text-muted">No. Rekening: ${response.data.nomor_rekening}</p>
+
                             <p class="mb-0 text-muted">Email: ${response.data.email}</p>
                         </div>
                     </div>

@@ -3,6 +3,8 @@ include '../koneksi.php';
 
 header('Content-Type: application/json');
 
+session_start();
+
 if (!isset($_GET['id_penerima'])) {
     echo json_encode(['success' => false, 'message' => 'ID Penerima tidak valid']);
     exit;

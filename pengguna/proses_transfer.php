@@ -12,7 +12,7 @@ $id_penerima = $_POST['id_penerima'];
 $jumlah = $_POST['jumlah'];
 $catatan = $_POST['catatan'] ?? '';
 $tanggal_transfer = $_POST['tanggal_transfer'];
-$status = 'pending'; // Atau 'success' jika langsung diproses
+$status = 'sukses'; // Atau 'success' jika langsung diproses
 
 // Validasi data
 if (empty($id_penerima) || empty($jumlah)) {
@@ -66,7 +66,7 @@ try {
     mysqli_commit($koneksi);
     
     $_SESSION['transfer_success'] = 'Transfer berhasil dilakukan';
-    header('Location: laporan.php');
+    header('Location: transfer.php');
     
 } catch (Exception $e) {
     // Rollback jika ada error
