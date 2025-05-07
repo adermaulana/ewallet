@@ -195,8 +195,8 @@ function formatRupiah($angka) {
 						<p class="small mb-0">Akun: <?= $no_rekening ?></p>
 					</div>
 					<div class="text-end">
-						<button class="btn btn-light me-2">Top Up</button>
-						<button class="btn btn-outline-light">Transfer</button>
+						<a href="tambahtopup.php" class="btn btn-light me-2">Top Up</a>
+						<a href="transfer.php" class="btn btn-outline-light">Transfer</a>
 					</div>
 				</div>
 			</div>

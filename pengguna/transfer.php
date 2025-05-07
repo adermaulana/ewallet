@@ -31,6 +31,7 @@ function formatRupiah($angka) {
 	<!-- Required meta tags -->
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+
 	<!--favicon-->
 	<link rel="icon" href="../assets/images/favicon-32x32.png" type="image/png"/>
 	<!--plugins-->
@@ -245,7 +246,7 @@ function formatRupiah($angka) {
                                     
                                     <!-- Camera preview placeholder (initially hidden) -->
                                     <div id="cameraPreviewBox" style="display: none; max-width: 250px; margin: 0 auto;">
-                                        <img src="../assets/images/qr-scan-placeholder.png" class="img-fluid" alt="Camera Preview" style="border: 1px solid #ddd;">
+                                       
                                     </div>
                                     
                                     <!-- Transfer Form (hidden by default) -->
@@ -288,26 +289,68 @@ function formatRupiah($angka) {
             </div>
         </div>
 
-        <!-- QR Code Scanner Modal -->
-        <div class="modal fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="qrScannerModalLabel">Scan QR Code</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="text-center">
-                            <video id="qrScanner" width="100%" style="border: 1px solid #ddd;"></video>
-                            <div id="scanResult" class="mt-3"></div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+		<!-- QR Code Scanner Modal -->
+		<div class="modal fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="qrScannerModalLabel">Scan QR Code</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<div class="text-center">
+							<video id="qrScanner" width="100%" style="border: 1px solid #ddd;"></video>
+							<div id="scanResult" class="mt-3"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Recipient Info Modal -->
+		<div class="modal fade" id="recipientModal" tabindex="-1" aria-labelledby="recipientModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="recipientModalLabel">Detail Penerima</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<div id="recipientInfo">
+							<!-- Data penerima akan dimuat di sini -->
+						</div>
+						<form method="post" action="proses_transfer.php">
+							<div class="mb-3">
+								<label for="transferAmount" class="form-label">Jumlah Transfer</label>
+								<div class="input-group">
+									<span class="input-group-text">Rp</span>
+									<input type="number" class="form-control" name="jumlah" id="transferAmount" required min="10000">
+								</div>
+								<small class="text-muted">Minimal Rp10.000</small>
+							</div>
+							
+							<div class="mb-3">
+								<label for="transferNote" class="form-label">Catatan (Opsional)</label>
+								<textarea class="form-control" name="catatan" id="transferNote" rows="2"></textarea>
+							</div>
+							
+							<!-- Hidden fields -->
+							<input type="hidden" name="id_pengirim" value="<?= $id_pengguna ?>">
+							<input type="hidden" name="id_penerima" id="modalRecipientId">
+							<input type="hidden" name="tanggal_transfer" value="<?= date('Y-m-d H:i:s') ?>">
+							<input type="hidden" name="status" value="pending">
+							
+							<div class="d-grid gap-2">
+								<button type="submit" name="transfer" class="btn btn-primary">Transfer Sekarang</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
 
 		<!--end page wrapper -->
 		<!--start overlay-->
@@ -510,21 +553,14 @@ function formatRupiah($angka) {
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
- // QR Code Scanner Functionality dengan penanganan izin yang lebih baik
 document.getElementById('scanQRBtn').addEventListener('click', function() {
-    // Show camera preview placeholder first
-    document.getElementById('cameraPreviewBox').style.display = 'block';
-    
-    // Then show the modal
     const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
     modal.show();
     
-    // Start scanner when modal is shown
     document.getElementById('qrScannerModal').addEventListener('shown.bs.modal', function() {
         startQRScanner();
     });
     
-    // Stop scanner when modal is hidden
     document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', function() {
         stopQRScanner();
     });
@@ -537,12 +573,10 @@ function startQRScanner() {
     const video = document.getElementById('qrScanner');
     const scanResult = document.getElementById('scanResult');
     
-    // Menampilkan instruksi izin terlebih dahulu
-    scanResult.innerHTML = '<div class="alert alert-info">Anda mungkin perlu memberikan izin kamera. Klik "Allow" atau "Izinkan" pada permintaan izin browser.</div>';
+    scanResult.innerHTML = '<div class="alert alert-info">Harap berikan izin kamera dan arahkan ke QR Code penerima.</div>';
     
-    // Cek apakah getUserMedia didukung browser
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        scanResult.innerHTML = '<div class="alert alert-danger">Browser Anda tidak mendukung akses kamera. Gunakan browser modern seperti Chrome atau Firefox versi terbaru.</div>';
+        scanResult.innerHTML = '<div class="alert alert-danger">Browser tidak mendukung akses kamera.</div>';
         return;
     }
     
@@ -557,10 +591,8 @@ function startQRScanner() {
         videoStream = stream;
         video.srcObject = stream;
         
-        // Tambahkan event listener untuk mendeteksi ketika video siap diputar
         video.onloadedmetadata = function(e) {
             video.play();
-            scanResult.innerHTML = '<div class="alert alert-success">Kamera aktif. Arahkan pada QR Code.</div>';
             
             interval = setInterval(function() {
                 if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -577,55 +609,28 @@ function startQRScanner() {
                         });
                         
                         if (code) {
-                            // Extract user ID from QR code data (format: "id|email")
                             const qrData = code.data.split('|');
                             const userId = qrData[0];
                             
-                            // Fill the recipient ID field
-                            document.getElementById('id_penerima').value = userId;
+                            // Stop scanner immediately when QR detected
+                            stopQRScanner();
                             
-                            // Show success message
-                            scanResult.innerHTML = '<div class="alert alert-success">QR Code berhasil dipindai!</div>';
+                            // Hide QR scanner modal
+                            bootstrap.Modal.getInstance(document.getElementById('qrScannerModal')).hide();
                             
-                            // Hide camera preview box and show transfer form
-                            document.getElementById('cameraPreviewBox').style.display = 'none';
-                            document.getElementById('transferForm').style.display = 'block';
-                            
-                            // Stop scanner after 2 seconds
-                            setTimeout(function() {
-                                stopQRScanner();
-                                bootstrap.Modal.getInstance(document.getElementById('qrScannerModal')).hide();
-                            }, 2000);
+                            // Load recipient data via AJAX
+                            loadRecipientData(userId);
                         }
                     } catch (error) {
-                        console.error("Error scanning QR code:", error);
+                        console.error("Error scanning QR:", error);
                     }
                 }
             }, 100);
         };
     })
     .catch(function(err) {
-        console.error("Error accessing camera: ", err);
-        
-        // Tampilkan pesan error yang lebih spesifik
-        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-            scanResult.innerHTML = `
-                <div class="alert alert-danger">
-                    <h5>Izin kamera ditolak</h5>
-                    <p>Untuk menggunakan fitur ini, Anda perlu memberikan izin kamera. Ikuti langkah ini:</p>
-                    <ol>
-                        <li>Klik ikon kunci/info di address bar browser</li>
-                        <li>Pilih "Izin" atau "Permissions"</li>
-                        <li>Izinkan akses kamera</li>
-                        <li>Refresh halaman ini</li>
-                    </ol>
-                    <p><strong>Untuk Localhost:</strong> Jika Anda menggunakan localhost, browser mungkin memblokir akses. Lihat dokumentasi untuk mengaktifkan kamera di localhost.</p>
-                </div>`;
-        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-            scanResult.innerHTML = '<div class="alert alert-danger">Tidak ada kamera ditemukan. Pastikan perangkat Anda memiliki kamera dan tidak digunakan aplikasi lain.</div>';
-        } else {
-            scanResult.innerHTML = '<div class="alert alert-danger">Error: ' + err.message + '. Coba refresh halaman atau gunakan browser lain.</div>';
-        }
+        console.error("Camera error:", err);
+        scanResult.innerHTML = '<div class="alert alert-danger">Error: ' + err.message + '</div>';
     });
 }
 
@@ -638,6 +643,50 @@ function stopQRScanner() {
     if (interval) {
         clearInterval(interval);
     }
+}
+
+function loadRecipientData(userId) {
+    $.ajax({
+        url: 'get_recipient.php',
+        type: 'GET',
+        data: { id_penerima: userId },
+        dataType: 'json',
+        beforeSend: function() {
+            // Show loading state
+            $('#recipientInfo').html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+        },
+        success: function(response) {
+            if (response.success) {
+                // Set the recipient ID in the modal form
+                $('#modalRecipientId').val(userId);
+                
+                // Format the recipient info
+                const recipientHTML = `
+                    <div class="d-flex align-items-center mb-4">
+                        <img src="../assets/images/avatars/avatar-2.png" class="rounded-circle" width="60" height="60" alt="User Avatar">
+                        <div class="ms-3">
+                            <h5>${response.data.nama_lengkap}</h5>
+                            <p class="mb-0 text-muted">No. Rekening: ${response.data.nomor_rekening}</p>
+                            <p class="mb-0 text-muted">Email: ${response.data.email}</p>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bx bx-info-circle"></i> Pastikan data penerima sudah benar sebelum melakukan transfer.
+                    </div>`;
+                
+                $('#recipientInfo').html(recipientHTML);
+                
+                // Show the recipient modal
+                const recipientModal = new bootstrap.Modal(document.getElementById('recipientModal'));
+                recipientModal.show();
+            } else {
+                alert(response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('Error loading recipient data: ' + error);
+        }
+    });
 }
 </script>
 
