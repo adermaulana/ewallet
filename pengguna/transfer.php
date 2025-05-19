@@ -1,3 +1,4 @@
+
 <?php
 
 include '../koneksi.php';
@@ -255,12 +256,16 @@ function formatRupiah($angka) {
                             
                             <!-- Transfer Form -->
                             <div class="col-md-6">
-                                <div class="text-center p-4" >
-                                    <h6 class="mb-3">Scan QR Code</h6>
-                                    <button class="btn btn-primary mb-3" type="button" id="scanQRBtn" style="padding: 10px 20px; font-size: 16px;">
-                                        <i class="bx bx-camera" style="font-size: 24px; vertical-align: middle;"></i> 
-                                        <span style="vertical-align: middle;">Scan QR Code</span>
-                                    </button>
+                                <div class="text-center p-4">
+                                    <h6 class="mb-3">Transfer dengan QR Code</h6>
+                                    <div class="d-flex justify-content-center gap-3">
+                                        <button class="btn btn-primary mb-3" type="button" id="scanQRBtn">
+                                            <i class="bx bx-camera"></i> Scan Kamera
+                                        </button>
+                                        <button class="btn btn-secondary mb-3" type="button" id="uploadQRBtn">
+                                            <i class="bx bx-upload"></i> Upload QR
+                                        </button>
+                                    </div>
                                     
                                     <!-- Camera preview placeholder (initially hidden) -->
                                     <div id="cameraPreviewBox" style="display: none; max-width: 250px; margin: 0 auto;">
@@ -308,25 +313,48 @@ function formatRupiah($angka) {
         </div>
 
 		<!-- QR Code Scanner Modal -->
-		<div class="modal fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerModalLabel" aria-hidden="true">
-			<div class="modal-dialog">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="qrScannerModalLabel">Scan QR Code</h5>
-						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-					</div>
-					<div class="modal-body">
-						<div class="text-center">
-							<video id="qrScanner" width="100%" style="border: 1px solid #ddd;"></video>
-							<div id="scanResult" class="mt-3"></div>
-						</div>
-					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-					</div>
-				</div>
-			</div>
-		</div>
+        <div class="modal fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="qrScannerModalLabel">Scan QR Code</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul class="nav nav-tabs" id="qrTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="scan-tab" data-bs-toggle="tab" data-bs-target="#scan-pane" type="button" role="tab">Scan Kamera</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload-pane" type="button" role="tab">Upload QR Code</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="qrTabContent">
+                            <div class="tab-pane fade show active" id="scan-pane" role="tabpanel">
+                                <div class="text-center mt-3">
+                                    <video id="qrScanner" width="100%" style="border: 1px solid #ddd;"></video>
+                                    <div id="scanResult" class="mt-3"></div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="upload-pane" role="tabpanel">
+                                <div class="text-center mt-3">
+                                    <div class="mb-3">
+                                        <label for="qrUpload" class="form-label">Pilih File QR Code</label>
+                                        <input class="form-control" type="file" id="qrUpload" accept="image/*">
+                                    </div>
+                                    <div id="qrPreview" class="mb-3"></div>
+                                    <button id="processQRBtn" class="btn btn-primary" disabled>Proses QR Code</button>
+                                    <div id="uploadResult" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
 		<!-- Recipient Info Modal -->
 		<div class="modal fade" id="recipientModal" tabindex="-1" aria-labelledby="recipientModalLabel" aria-hidden="true">
@@ -336,39 +364,64 @@ function formatRupiah($angka) {
 						<h5 class="modal-title" id="recipientModalLabel">Detail Penerima</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
-					<div class="modal-body">
-						<div id="recipientInfo">
-							<!-- Data penerima akan dimuat di sini -->
-						</div>
-						<form method="post" action="proses_transfer.php">
-							<div class="mb-3">
-								<label for="transferAmount" class="form-label">Jumlah Transfer</label>
-								<div class="input-group">
-									<span class="input-group-text">Rp</span>
-									<input type="number" class="form-control" name="jumlah" id="transferAmount" required min="10000">
-								</div>
-								<small class="text-muted">Minimal Rp10.000</small>
-							</div>
-							
-							<div class="mb-3">
-								<label for="transferNote" class="form-label">Catatan (Opsional)</label>
-								<textarea class="form-control" name="catatan" id="transferNote" rows="2"></textarea>
-							</div>
-							
-							<!-- Hidden fields -->
-							<input type="hidden" name="id_pengirim" value="<?= $id_pengguna ?>">
-							<input type="hidden" name="id_penerima" id="modalRecipientId">
-							<input type="hidden" name="tanggal_transfer" value="<?= date('Y-m-d H:i:s') ?>">
-							<input type="hidden" name="status" value="pending">
-							
-							<div class="d-grid gap-2">
-								<button type="submit" name="transfer" class="btn btn-primary">Transfer Sekarang</button>
-							</div>
-						</form>
-					</div>
+                    <!-- Di recipientModal, ganti form menjadi div biasa -->
+                    <div class="modal-body">
+                        <div id="recipientInfo">
+                            <!-- Data penerima akan dimuat di sini -->
+                        </div>
+                        <div class="mb-3">
+                            <label for="transferAmount" class="form-label">Jumlah Transfer</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="number" class="form-control" id="transferAmount" required min="10000">
+                            </div>
+                            <small class="text-muted">Minimal Rp10.000</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="transferNote" class="form-label">Catatan (Opsional)</label>
+                            <textarea class="form-control" id="transferNote" rows="2"></textarea>
+                        </div>
+                        
+                        <!-- Hidden fields -->
+                        <input type="hidden" id="modalRecipientId">
+                        
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary" id="confirmTransferBtn">Transfer Sekarang</button>
+                        </div>
+                    </div>
 				</div>
 			</div>
 		</div>
+
+
+        <!-- Password Verification Modal -->
+        <div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="passwordModalLabel">Verifikasi Password</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="passwordForm">
+                            <div class="mb-3">
+                                <label for="userPassword" class="form-label">Masukkan Password Anda</label>
+                                <input type="password" class="form-control" id="userPassword" required>
+                                <div id="passwordError" class="text-danger mt-1" style="display: none;"></div>
+                            </div>
+                            <input type="hidden" id="finalRecipientId">
+                            <input type="hidden" id="finalTransferAmount">
+                            <input type="hidden" id="finalTransferNote">
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-primary" id="verifyPasswordBtn">Verifikasi</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
 		<!--end page wrapper -->
 		<!--start overlay-->
@@ -703,6 +756,176 @@ function loadRecipientData(userId) {
         },
         error: function(xhr, status, error) {
             alert('Error loading recipient data: ' + error);
+        }
+    });
+}
+
+
+$('#uploadQRBtn').click(function() {
+    const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
+    modal.show();
+    
+    // Aktifkan tab upload
+    $('#upload-tab').tab('show');
+});
+
+$(document).ready(function() {
+    // Handle QR code upload
+    $('#qrUpload').change(function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            $('#qrPreview').html(`<img src="${event.target.result}" class="img-fluid" style="max-width: 250px;">`);
+            $('#processQRBtn').prop('disabled', false);
+        };
+        reader.readAsDataURL(file);
+    });
+    
+    $('#processQRBtn').click(function() {
+        const fileInput = document.getElementById('qrUpload');
+        if (!fileInput.files || !fileInput.files[0]) {
+            $('#uploadResult').html('<div class="alert alert-danger">Silakan pilih file QR Code terlebih dahulu</div>');
+            return;
+        }
+        
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                try {
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+                    
+                    if (code) {
+                        const qrData = code.data.split('|');
+                        const userId = qrData[0];
+                        
+                        // Stop scanner jika ada
+                        stopQRScanner();
+                        
+                        // Hide QR scanner modal
+                        bootstrap.Modal.getInstance(document.getElementById('qrScannerModal')).hide();
+                        
+                        // Load recipient data
+                        loadRecipientData(userId);
+                    } else {
+                        $('#uploadResult').html('<div class="alert alert-danger">Tidak dapat membaca QR Code dari gambar</div>');
+                    }
+                } catch (error) {
+                    console.error("Error scanning QR:", error);
+                    $('#uploadResult').html('<div class="alert alert-danger">Error: ' + error.message + '</div>');
+                }
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+});
+
+
+$(document).ready(function() {
+    // Ketika tombol transfer di modal penerima diklik
+    $(document).on('click', '#confirmTransferBtn', function(e) {
+        e.preventDefault();
+        
+        // Validasi input
+        const amount = $('#transferAmount').val();
+        if (!amount || amount < 10000) {
+            alert('Jumlah transfer minimal Rp10.000');
+            return;
+        }
+        
+        // Simpan data transfer
+        $('#finalRecipientId').val($('#modalRecipientId').val());
+        $('#finalTransferAmount').val(amount);
+        $('#finalTransferNote').val($('#transferNote').val());
+        
+        // Tampilkan modal password
+        const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+        passwordModal.show();
+    });
+    
+    // Ketika tombol verifikasi password diklik
+    $('#verifyPasswordBtn').click(function() {
+        const password = $('#userPassword').val();
+        
+        if (!password) {
+            $('#passwordError').text('Password harus diisi').show();
+            return;
+        }
+        
+        // Kirim permintaan AJAX untuk verifikasi password
+        $.ajax({
+            url: 'verify_password.php',
+            type: 'POST',
+            data: {
+                id_pengguna: <?= $id_pengguna ?>,
+                password: password
+            },
+            dataType: 'json',
+            beforeSend: function() {
+                $('#verifyPasswordBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memverifikasi...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Password valid, lakukan transfer
+                    performTransfer();
+                } else {
+                    $('#passwordError').text(response.message).show();
+                    $('#verifyPasswordBtn').prop('disabled', false).text('Verifikasi');
+                }
+            },
+            error: function() {
+                $('#passwordError').text('Terjadi kesalahan saat memverifikasi password').show();
+                $('#verifyPasswordBtn').prop('disabled', false).text('Verifikasi');
+            }
+        });
+    });
+});
+
+function performTransfer() {
+    const formData = {
+        id_pengirim: <?= $id_pengguna ?>,
+        id_penerima: $('#finalRecipientId').val(),
+        jumlah: $('#finalTransferAmount').val(),
+        catatan: $('#finalTransferNote').val(),
+        tanggal_transfer: '<?= date('Y-m-d H:i:s') ?>',
+        status: 'pending',
+        password: $('#userPassword').val() // Kirim password juga untuk verifikasi ulang di server
+    };
+    
+    $.ajax({
+        url: 'proses_transfer.php',
+        type: 'POST',
+        data: formData,
+        dataType: 'json',
+        success: function(response) {
+            // Tutup semua modal
+            bootstrap.Modal.getInstance(document.getElementById('passwordModal')).hide();
+            bootstrap.Modal.getInstance(document.getElementById('recipientModal')).hide();
+            
+            if (response.success) {
+                // Tampilkan pesan sukses dan refresh halaman atau update saldo
+                alert(response.message);
+                location.reload();
+            } else {
+                alert(response.message);
+            }
+        },
+        error: function() {
+            alert('Terjadi kesalahan saat melakukan transfer');
         }
     });
 }
