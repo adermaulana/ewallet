@@ -34,7 +34,7 @@ $result = mysqli_query($koneksi, $query);
 
 // Hitung total transaksi
 $total_query = "SELECT 
-                SUM(CASE WHEN jenis_transaksi = 'topup' THEN jumlah ELSE 0 END) as total_topup,
+                SUM(CASE WHEN jenis_transaksi = 'top_up' THEN jumlah ELSE 0 END) as total_topup,
                 SUM(CASE WHEN jenis_transaksi = 'transfer' THEN jumlah ELSE 0 END) as total_transfer,
                 SUM(CASE WHEN jenis_transaksi = 'tarik' THEN jumlah ELSE 0 END) as total_tarik
                 FROM transaksi
@@ -85,7 +85,7 @@ $total_data = mysqli_fetch_assoc($total_result);
         .summary-box {
             border: 1px solid #ddd;
             padding: 10px;
-            width: 30%;
+            width: 50%;
             text-align: center;
         }
         .footer {
@@ -120,10 +120,7 @@ $total_data = mysqli_fetch_assoc($total_result);
             <h3>Total Transfer</h3>
             <p><?= number_format($total_data['total_transfer'], 0, ',', '.') ?></p>
         </div>
-        <div class="summary-box">
-            <h3>Total Penarikan</h3>
-            <p><?= number_format($total_data['total_tarik'], 0, ',', '.') ?></p>
-        </div>
+
     </div>
     
     <table>
