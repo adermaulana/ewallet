@@ -312,7 +312,7 @@ $chart_topup_data = array_values($chart_topup);
 							</div>
 							<div class="card-body">
 								<div>
-									<canvas id="transactionChart" height="300"></canvas>
+									<canvas id="transactionChart" height="100"></canvas>
 								</div>
 							</div>
 						</div>
