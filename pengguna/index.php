@@ -1,5 +1,4 @@
 <?php
-
 include '../koneksi.php';
 
 session_start();
@@ -9,19 +8,122 @@ $id_pengguna = $_SESSION['id_pengguna'];
 if ($_SESSION['status'] != 'login') {
     session_unset();
     session_destroy();
-
     header('location:../');
 }
 
-$query = mysqli_query($koneksi, "SELECT saldo, nomor_rekening FROM pengguna WHERE id_pengguna = '$id_pengguna'");
+// Get user data
+$query = mysqli_query($koneksi, "SELECT saldo, nomor_rekening, nama_lengkap FROM pengguna WHERE id_pengguna = '$id_pengguna'");
 $data_pengguna = mysqli_fetch_assoc($query);
 $saldo = $data_pengguna['saldo'] ?? 0;
-$no_rekening = $data_pengguna['no_rekening'] ?? 'Belum terdaftar';
+$no_rekening = $data_pengguna['nomor_rekening'] ?? 'Belum terdaftar';
+$nama_pengguna = $data_pengguna['nama_lengkap'] ?? 'Pengguna';
+
+// Get transaction stats
+$query_transaksi = mysqli_query($koneksi, "SELECT 
+    COUNT(*) as total_transaksi, 
+    SUM(jumlah) as total_jumlah 
+    FROM transaksi 
+    WHERE id_pengguna = '$id_pengguna'");
+$stats_transaksi = mysqli_fetch_assoc($query_transaksi);
+$total_transaksi = $stats_transaksi['total_transaksi'] ?? 0;
+$total_jumlah = $stats_transaksi['total_jumlah'] ?? 0;
+
+// Get recent transactions (combining transfers and top-ups)
+$query_recent = mysqli_query($koneksi, "(
+    SELECT 
+        'transfer' as jenis,
+        t.id_transfer as id,
+        t.tanggal_transfer as tanggal,
+        t.jumlah,
+        t.status,
+        p.nama_lengkap as pihak_lain,
+        'Transfer ke ' as keterangan
+    FROM riwayat_transfer t
+    JOIN pengguna p ON t.id_penerima = p.id_pengguna
+    WHERE t.id_pengirim = '$id_pengguna'
+    ORDER BY t.tanggal_transfer DESC
+    LIMIT 5
+) UNION ALL (
+    SELECT 
+        'topup' as jenis,
+        tu.id_top_up as id,
+        tu.tanggal_top_up as tanggal,
+        tu.jumlah,
+        tu.status,
+        '' as pihak_lain,
+        'Top Up ' as keterangan
+    FROM top_up tu
+    WHERE tu.id_pengguna = '$id_pengguna'
+    ORDER BY tu.tanggal_top_up DESC
+    LIMIT 5
+) ORDER BY tanggal DESC LIMIT 5");
 
 // Format saldo ke Rupiah
 function formatRupiah($angka) {
     return 'Rp ' . number_format($angka, 0, ',', '.');
 }
+
+// Format date to relative time
+function formatWaktu($date) {
+    $now = new DateTime();
+    $date = new DateTime($date);
+    $diff = $now->diff($date);
+    
+    if ($diff->y > 0) return $date->format('d M Y');
+    if ($diff->m > 0) return $date->format('d M');
+    if ($diff->d > 0) return $diff->d . ' hari lalu';
+    if ($diff->h > 0) return $diff->h . ' jam lalu';
+    if ($diff->i > 0) return $diff->i . ' menit lalu';
+    return 'Baru saja';
+}
+
+
+
+$query_chart = mysqli_query($koneksi, "(
+    SELECT 
+        DATE(tanggal_transfer) as tanggal,
+        SUM(jumlah) as jumlah,
+        'transfer' as jenis
+    FROM riwayat_transfer 
+    WHERE id_pengirim = '$id_pengguna'
+    AND tanggal_transfer >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+    GROUP BY DATE(tanggal_transfer)
+) UNION ALL (
+    SELECT 
+        DATE(tanggal_top_up) as tanggal,
+        SUM(jumlah) as jumlah,
+        'topup' as jenis
+    FROM top_up 
+    WHERE id_pengguna = '$id_pengguna'
+    AND tanggal_top_up >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+    GROUP BY DATE(tanggal_top_up))
+ORDER BY tanggal");
+
+$chart_labels = [];
+$chart_transfer = [];
+$chart_topup = [];
+
+// Initialize arrays with 7 days
+for ($i = 6; $i >= 0; $i--) {
+    $date = date('Y-m-d', strtotime("-$i days"));
+    $chart_labels[] = date('d M', strtotime($date));
+    $chart_transfer[$date] = 0;
+    $chart_topup[$date] = 0;
+}
+
+// Process chart data
+while ($row = mysqli_fetch_assoc($query_chart)) {
+    $date = $row['tanggal'];
+    if ($row['jenis'] == 'transfer') {
+        $chart_transfer[$date] = (float)$row['jumlah'];
+    } else {
+        $chart_topup[$date] = (float)$row['jumlah'];
+    }
+}
+
+// Convert to arrays in order
+$chart_transfer_data = array_values($chart_transfer);
+$chart_topup_data = array_values($chart_topup);
 
 ?>
 <!doctype html>
@@ -164,7 +266,7 @@ function formatRupiah($angka) {
 						<a class="d-flex align-items-center nav-link dropdown-toggle gap-3 dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 							<img src="../assets/images/avatars/avatar-2.png" class="user-img" alt="user avatar">
 							<div class="user-info">
-								<p class="user-name mb-0"><?= $_SESSION['nama_pengguna'] ?></p>
+								<p class="user-name mb-0"><?= $nama_pengguna ?></p>
 							</div>
 						</a>
 						<ul class="dropdown-menu dropdown-menu-end">
@@ -178,107 +280,132 @@ function formatRupiah($angka) {
 		<!--end header -->
 		<!--start page wrapper -->
 		<div class="page-wrapper">
-    <div class="page-content">
-        <!-- Dashboard Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold text-primary">Hello, <?= $_SESSION['nama_pengguna'] ?></h2>
+            <div class="page-content">
+                <!-- Dashboard Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="fw-bold text-primary">Hello, <?= $nama_pengguna ?></h2>
+                </div>
 
-        </div>
+                <!-- Wallet Balance Card -->
+                <div class="card bg-primary text-white mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="mb-1">Saldo</p>
+                                <h2 class="fw-bold mb-2 text-dark"><?= formatRupiah($saldo) ?></h2>
+                                <p class="small mb-0">Nomor Rekening: <?= $no_rekening ?></p>
+                            </div>
+                            <div class="text-end">
+                                <a href="tambahtopup.php" class="btn btn-light me-2">Top Up</a>
+                                <a href="transfer.php" class="btn btn-outline-light">Transfer</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- Wallet Balance Card -->
-		<div class="card bg-primary text-white mb-4">
-			<div class="card-body">
-				<div class="d-flex justify-content-between align-items-center">
-					<div>
-						<p class="mb-1">Saldo</p>
-						<h2 class="fw-bold mb-2 text-dark"><?= formatRupiah($saldo) ?></h2>
-						<p class="small mb-0">Akun: <?= $no_rekening ?></p>
-					</div>
-					<div class="text-end">
-						<a href="tambahtopup.php" class="btn btn-light me-2">Top Up</a>
-						<a href="transfer.php" class="btn btn-outline-light">Transfer</a>
+
+				<div class="row mb-4">
+					<div class="col-12">
+						<div class="card border-0 shadow-sm">
+							<div class="card-header bg-white border-0">
+								<h5 class="fw-bold mb-0">Aktivitas Transaksi 7 Hari Terakhir</h5>
+							</div>
+							<div class="card-body">
+								<div>
+									<canvas id="transactionChart" height="300"></canvas>
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
-			</div>
-		</div>
 
-        <!-- Stats Cards -->
-        <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">
-            <div class="col">
-                <div class="card card-hover border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-gradient-danger bg-opacity-10 p-3 rounded me-3">
-                                <i class='bx bxs-wallet text-danger' style="font-size: 1.5rem;"></i>
+                <!-- Stats Cards -->
+                <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">
+                    <div class="col">
+                        <div class="card card-hover border-0 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-gradient-danger bg-opacity-10 p-3 rounded me-3">
+                                        <i class='bx bxs-wallet text-danger' style="font-size: 1.5rem;"></i>
+                                    </div>
+                                    <div>
+                                        <p class="mb-1 text-secondary">Total Transaksi</p>
+                                        <h4 class="mb-0 fw-bold"><?= $total_transaksi ?></h4>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <p class="mb-1 text-secondary">Total Transaksi</p>
-                                <h4 class="mb-0 fw-bold">3</h4>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card card-hover border-0 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-gradient-success bg-opacity-10 p-3 rounded me-3">
+                                        <i class='bx bx-transfer text-success' style="font-size: 1.5rem;"></i>
+                                    </div>
+                                    <div>
+                                        <p class="mb-1 text-secondary">Total Nominal</p>
+                                        <h4 class="mb-0 fw-bold"><?= formatRupiah($total_jumlah) ?></h4>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col">
-                <div class="card card-hover border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-gradient-success bg-opacity-10 p-3 rounded me-3">
-                                <i class='bx bx-transfer text-success' style="font-size: 1.5rem;"></i>
+
+                <!-- Recent Transactions and Quick Actions -->
+                <div class="row">
+                    <div class="col-lg-12 mb-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="fw-bold mb-0">Transaksi Terakhir</h5>
                             </div>
-                            <div>
-                                <p class="mb-1 text-secondary">Jumlah Transaksi</p>
-                                <h4 class="mb-0 fw-bold">Rp 200.000</h4>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Tanggal</th>
+                                                <th>Deskripsi</th>
+                                                <th>Jumlah</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php if(mysqli_num_rows($query_recent) > 0): ?>
+                                                <?php while($transaksi = mysqli_fetch_assoc($query_recent)): ?>
+                                                    <tr>
+                                                        <td><?= formatWaktu($transaksi['tanggal']) ?></td>
+                                                        <td>
+                                                            <?= $transaksi['keterangan'] ?>
+                                                            <?= $transaksi['jenis'] == 'transfer' ? $transaksi['pihak_lain'] : '' ?>
+                                                        </td>
+                                                        <td class="<?= $transaksi['jenis'] == 'topup' ? 'text-success' : 'text-danger' ?>">
+                                                            <?= $transaksi['jenis'] == 'topup' ? '+' : '-' ?>
+                                                            <?= formatRupiah($transaksi['jumlah']) ?>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-<?= $transaksi['status'] == 'selesai' ? 'success' : 'warning' ?>">
+                                                                <?= ucfirst($transaksi['status']) ?>
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                <?php endwhile; ?>
+                                            <?php else: ?>
+                                                <tr>
+                                                    <td colspan="4" class="text-center">Belum ada transaksi</td>
+                                                </tr>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <a href="laporan.php" class="btn btn-outline-primary w-100 mt-2">Lihat Semua Transaksi</a>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Recent Transactions and Quick Actions -->
-        <div class="row">
-            <div class="col-lg-12 mb-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-0">
-                        <h5 class="fw-bold mb-0">Recent Transactions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>Tanggal</th>
-                                        <th>Jumlah</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Today, 10:45</td>
-                                        <td class="text-danger">- Rp 45,000</td>
-                                        <td><span class="badge bg-success">Selesai</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Yesterday, 14:30</td>
-                                        <td class="text-success">+ Rp 250,000</td>
-                                        <td><span class="badge bg-success">Selesai</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Mar 12, 09:15</td>
-                                        <td class="text-danger">- Rp 350,000</td>
-                                        <td><span class="badge bg-success">Selesai</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <a href="#" class="btn btn-outline-primary w-100 mt-2">Lihat Semua Transaksi</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 		<!--end page wrapper -->
 		<!--start overlay-->
 		 <div class="overlay toggle-icon"></div>
@@ -341,105 +468,6 @@ function formatRupiah($angka) {
 	  </div>
     <!-- end search modal -->
 
-
-
-
-	<!--start switcher-->
-	<div class="switcher-wrapper">
-		<div class="switcher-btn"> <i class='bx bx-cog bx-spin'></i>
-		</div>
-		<div class="switcher-body">
-			<div class="d-flex align-items-center">
-				<h5 class="mb-0 text-uppercase">Theme Customizer</h5>
-				<button type="button" class="btn-close ms-auto close-switcher" aria-label="Close"></button>
-			</div>
-			<hr/>
-			<h6 class="mb-0">Theme Styles</h6>
-			<hr/>
-			<div class="d-flex align-items-center justify-content-between">
-				<div class="form-check">
-					<input class="form-check-input" type="radio" name="flexRadioDefault" id="lightmode" checked>
-					<label class="form-check-label" for="lightmode">Light</label>
-				</div>
-				<div class="form-check">
-					<input class="form-check-input" type="radio" name="flexRadioDefault" id="darkmode">
-					<label class="form-check-label" for="darkmode">Dark</label>
-				</div>
-				<div class="form-check">
-					<input class="form-check-input" type="radio" name="flexRadioDefault" id="semidark">
-					<label class="form-check-label" for="semidark">Semi Dark</label>
-				</div>
-			</div>
-			<hr/>
-			<div class="form-check">
-				<input class="form-check-input" type="radio" id="minimaltheme" name="flexRadioDefault">
-				<label class="form-check-label" for="minimaltheme">Minimal Theme</label>
-			</div>
-			<hr/>
-			<h6 class="mb-0">Header Colors</h6>
-			<hr/>
-			<div class="header-colors-indigators">
-				<div class="row row-cols-auto g-3">
-					<div class="col">
-						<div class="indigator headercolor1" id="headercolor1"></div>
-					</div>
-					<div class="col">
-						<div class="indigator headercolor2" id="headercolor2"></div>
-					</div>
-					<div class="col">
-						<div class="indigator headercolor3" id="headercolor3"></div>
-					</div>
-					<div class="col">
-						<div class="indigator headercolor4" id="headercolor4"></div>
-					</div>
-					<div class="col">
-						<div class="indigator headercolor5" id="headercolor5"></div>
-					</div>
-					<div class="col">
-						<div class="indigator headercolor6" id="headercolor6"></div>
-					</div>
-					<div class="col">
-						<div class="indigator headercolor7" id="headercolor7"></div>
-					</div>
-					<div class="col">
-						<div class="indigator headercolor8" id="headercolor8"></div>
-					</div>
-				</div>
-			</div>
-			<hr/>
-			<h6 class="mb-0">Sidebar Colors</h6>
-			<hr/>
-			<div class="header-colors-indigators">
-				<div class="row row-cols-auto g-3">
-					<div class="col">
-						<div class="indigator sidebarcolor1" id="sidebarcolor1"></div>
-					</div>
-					<div class="col">
-						<div class="indigator sidebarcolor2" id="sidebarcolor2"></div>
-					</div>
-					<div class="col">
-						<div class="indigator sidebarcolor3" id="sidebarcolor3"></div>
-					</div>
-					<div class="col">
-						<div class="indigator sidebarcolor4" id="sidebarcolor4"></div>
-					</div>
-					<div class="col">
-						<div class="indigator sidebarcolor5" id="sidebarcolor5"></div>
-					</div>
-					<div class="col">
-						<div class="indigator sidebarcolor6" id="sidebarcolor6"></div>
-					</div>
-					<div class="col">
-						<div class="indigator sidebarcolor7" id="sidebarcolor7"></div>
-					</div>
-					<div class="col">
-						<div class="indigator sidebarcolor8" id="sidebarcolor8"></div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<!--end switcher-->
 	<!-- Bootstrap JS -->
 	<script src="../assets/js/bootstrap.bundle.min.js"></script>
 	<!--plugins-->
@@ -456,6 +484,72 @@ function formatRupiah($angka) {
 	<script>
 		new PerfectScrollbar(".app-container")
 	</script>
-</body>
 
+
+<!-- Chart JS -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('transactionChart').getContext('2d');
+        const transactionChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: <?= json_encode($chart_labels) ?>,
+                datasets: [
+                    {
+                        label: 'Transfer Keluar',
+                        data: <?= json_encode($chart_transfer_data) ?>,
+                        backgroundColor: 'rgb(255, 0, 55)',
+                        borderColor: 'rgb(255, 0, 55)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Top Up',
+                        data: <?= json_encode($chart_topup_data) ?>,
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('id-ID', {
+                                        style: 'currency',
+                                        currency: 'IDR',
+                                        minimumFractionDigits: 0
+                                    }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp' + value.toLocaleString('id-ID');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+</body>
 </html>
