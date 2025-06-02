@@ -1,120 +1,8 @@
 <?php
-include '../koneksi.php';
 session_start();
-
-$id_pengguna = $_SESSION['id_pengguna'];
-
-if ($_SESSION['status'] != 'login') {
-    session_unset();
-    session_destroy();
-    header('location:../');
-}
-
-// Load Midtrans library (pastikan Anda sudah menginstall library Midtrans)
-require_once dirname(__FILE__) . '/../vendor/midtrans/midtrans-php/Midtrans.php';
-
-// Set konfigurasi Midtrans
-\Midtrans\Config::$serverKey = 'SB-Mid-server-4rYQ49sACAiSqMbnRBUSqbCN'; // Ganti dengan server key Anda
-\Midtrans\Config::$isProduction = false; // Set true untuk production
-\Midtrans\Config::$isSanitized = true;
-\Midtrans\Config::$is3ds = true;
-
-if(isset($_POST['simpan_topup'])) {
-    $jumlah = $_POST['jumlah'];
-    $metode_pembayaran = $_POST['metode_pembayaran'];
-    $nomor_referensi = uniqid('TOPUP-', true);
-    $status = 'pending'; // Default status pending sampai pembayaran berhasil
-    $tanggal_top_up = date('Y-m-d H:i:s');
-    
-    // Mulai transaction
-    mysqli_begin_transaction($koneksi);
-    
-    try {
-        // 1. Simpan ke tabel top_up
-        $query_topup = "INSERT INTO top_up (id_pengguna, jumlah, metode_pembayaran, nomor_referensi, status, tanggal_top_up) 
-                       VALUES ('$id_pengguna', '$jumlah', '$metode_pembayaran', '$nomor_referensi', '$status', '$tanggal_top_up')";
-        
-        $result_topup = mysqli_query($koneksi, $query_topup);
-        
-        if(!$result_topup) {
-            throw new Exception("Gagal menyimpan data top-up: " . mysqli_error($koneksi));
-        }
-        
-        $id_topup = mysqli_insert_id($koneksi);
-        
-        // 2. Simpan ke tabel transaksi
-        $query_transaksi = "INSERT INTO transaksi (
-                            id_pengguna, 
-                            jenis_transaksi, 
-                            jumlah,
-                            id_penerima,
-                            deskripsi, 
-                            status,
-                            tanggal_transaksi
-                          ) VALUES (
-                            '$id_pengguna',
-                            'top_up',
-                            '$jumlah',
-                            '$id_pengguna',
-                            'Top-up saldo via $metode_pembayaran (Ref: $nomor_referensi)',
-                            '$status',
-                            '$tanggal_top_up'
-                          )";
-        
-        $result_transaksi = mysqli_query($koneksi, $query_transaksi);
-        
-        if(!$result_transaksi) {
-            throw new Exception("Gagal menyimpan data transaksi: " . mysqli_error($koneksi));
-        }
-        
-        // 3. Buat transaksi Midtrans
-        $transaction_details = array(
-            'order_id' => $nomor_referensi,
-            'gross_amount' => $jumlah
-        );
-        
-        // Data customer
-        $customer_details = array(
-            'first_name' => $_SESSION['nama_pengguna'],
-            'email' => $_SESSION['email_pengguna'], // Pastikan email tersedia di session
-            'phone' => $_SESSION['no_telepon'] // Pastikan nomor telepon tersedia di session
-        );
-        
-        // Item details
-        $item_details = array(
-            array(
-                'id' => 'topup',
-                'price' => $jumlah,
-                'quantity' => 1,
-                'name' => 'Top Up Saldo'
-            )
-        );
-        
-        // Parameter transaksi
-        $transaction_data = array(
-            'transaction_details' => $transaction_details,
-            'customer_details' => $customer_details,
-            'item_details' => $item_details
-        );
-        
-        // Dapatkan Snap Token
-        $snapToken = \Midtrans\Snap::getSnapToken($transaction_data);
-        
-        mysqli_commit($koneksi);
-        
-        // Simpan snap token ke session untuk digunakan di halaman pembayaran
-        $_SESSION['snap_token'] = $snapToken;
-        $_SESSION['order_id'] = $nomor_referensi;
-        
-        // Redirect ke halaman pembayaran
-        header('Location: payment_page.php');
-        exit();
-        
-    } catch (Exception $e) {
-        mysqli_rollback($koneksi);
-        error_log($e->getMessage());
-        echo "<script>alert('Error: ".addslashes($e->getMessage())."');</script>";
-    }
+if(!isset($_SESSION['snap_token'])) {
+    header('Location: tambahtopup.php');
+    exit();
 }
 ?>
 <!doctype html>
@@ -145,14 +33,15 @@ if(isset($_POST['simpan_topup'])) {
 	<link rel="stylesheet" href="../assets/css/dark-theme.css"/>
 	<link rel="stylesheet" href="../assets/css/semi-dark.css"/>
 	<link rel="stylesheet" href="../assets/css/header-colors.css"/>
-	<title>Dashboard Pengguna</title>
+        <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js" 
+        data-client-key="SB-Mid-server-4rYQ49sACAiSqMbnRBUSqbCN"></script>
+	<title>Halaman Pembayaran</title>
 </head>
 
 <body>
 	<!--wrapper-->
 	<div class="wrapper">
-		<!--sidebar wrapper -->
-		<div class="sidebar-wrapper" data-simplebar="true">
+        		<div class="sidebar-wrapper" data-simplebar="true">
 			<div class="sidebar-header">
 				<div>
 					<img src="../assets/images/logo-icon.png" class="logo-icon" alt="logo icon">
@@ -211,7 +100,6 @@ if(isset($_POST['simpan_topup'])) {
 			</ul>
 			<!--end navigation-->
 		</div>
-		<!--end sidebar wrapper -->
 		<!--start header -->
 		<header>
 			<div class="topbar d-flex align-items-center">
@@ -290,47 +178,15 @@ if(isset($_POST['simpan_topup'])) {
 				<hr/>
 				<div class="card">
 					<div class="card-body">
-					<form method="post" action="">
-						<div class="row">
-							<!-- Jumlah Top-up -->
-							<div class="col-md-6 mb-3">
-								<label for="jumlah" class="form-label">Jumlah Top-up</label>
-								<div class="input-group">
-									<span class="input-group-text">Rp</span>
-									<input type="number" class="form-control" name="jumlah" id="jumlah" required min="10000">
-								</div>
-								<small class="text-muted">Minimal Rp10.000</small>
-							</div>
-
-							<!-- Metode Pembayaran -->
-							<div class="col-md-6 mb-3">
-								<label for="metode_pembayaran" class="form-label">Metode Pembayaran</label>
-								<select class="form-select" name="metode_pembayaran" id="metode_pembayaran" required>
-									<option value="">Pilih Metode</option>
-									<option value="credit_card">Kartu Kredit</option>
-									<option value="bank_transfer">Transfer Bank</option>
-									<option value="gopay">Gopay</option>
-									<option value="shopeepay">ShopeePay</option>
-									<option value="qris">QRIS</option>
-								</select>
-							</div>
-
-							<div class="col-md-12">
-								<div class="border-top pt-3">
-									<h6>Instruksi Pembayaran</h6>
-									<p>Setelah mengisi form, Anda akan diarahkan ke halaman pembayaran Midtrans</p>
-								</div>
-							</div>
-
-							<!-- Tombol Submit -->
-							<div class="col-md-12">
-								<div class="d-md-flex d-grid align-items-center gap-3">
-									<button type="submit" name="simpan_topup" class="btn btn-primary px-4">Lanjutkan ke Pembayaran</button>
-									<button type="reset" class="btn btn-light px-4">Reset</button>
-								</div>
-							</div>
-						</div>
-					</form>
+                        <div class="payment-page">
+                            <h2>Lanjutkan Pembayaran</h2>
+                            <p>Silakan lengkapi pembayaran untuk top up saldo Anda</p>
+                            
+                            <div class="payment-container">
+                                <p>Order ID: <?php echo $_SESSION['order_id']; ?></p>
+                                <button class="btn btn-success" id="pay-button">Bayar Sekarang</button>
+                            </div>
+                        </div>
 					</div>
 				</div>
 
@@ -536,7 +392,24 @@ if(isset($_POST['simpan_topup'])) {
 		new PerfectScrollbar(".app-container")
 	</script>
 
-
+    <script type="text/javascript">
+        document.getElementById('pay-button').onclick = function(){
+            snap.pay('<?php echo $_SESSION['snap_token']; ?>', {
+                // Optional
+                onSuccess: function(result){
+                    window.location.href = 'payment_success.php?order_id='+result.order_id;
+                },
+                // Optional
+                onPending: function(result){
+                    window.location.href = 'payment_pending.php?order_id='+result.order_id;
+                },
+                // Optional
+                onError: function(result){
+                    window.location.href = 'payment_failed.php?order_id='+result.order_id;
+                }
+            });
+        };
+    </script>
 
 </body>
 
