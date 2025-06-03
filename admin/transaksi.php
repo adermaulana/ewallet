@@ -255,7 +255,7 @@ if(isset($_GET['hal']) == "hapus"){
 									"SELECT t.*, p1.nama_lengkap as nama_pengguna, p2.nama_lengkap as nama_penerima 
 									FROM transaksi t
 									LEFT JOIN pengguna p1 ON t.id_pengguna = p1.id_pengguna
-									LEFT JOIN pengguna p2 ON t.id_penerima = p2.id_pengguna");
+									LEFT JOIN pengguna p2 ON t.id_penerima = p2.id_pengguna ORDER BY t.tanggal_transaksi DESC");
 								while($data = mysqli_fetch_array($tampil)):
 							?>
 								<tr>
