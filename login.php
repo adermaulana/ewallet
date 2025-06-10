@@ -5,39 +5,51 @@
 
     session_start();
 
-    if(isset($_SESSION['status']) == 'login'){
+    if (isset($_SESSION['status']) && $_SESSION['status'] == 'login') {
 
-        header("location:admin");
-        
-    }
+		if (isset($_SESSION['id_admin'])) {
+			header('Location:admin');
+			exit();
+		} else {
+			header("location:pengguna");
+			exit();
+		}
+	
+	}
 
-    if (isset($_POST['registrasi'])) {
-        $password = md5($_POST['password']);
+    if(isset($_POST['login'])){
+
         $username = $_POST['username'];
+        $password = md5($_POST['password']);
 
-        // Check if the username already exists
-        $checkUsername = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE username='$username'");
-        if (mysqli_num_rows($checkUsername) > 0) {
-            echo "<script>
-                    alert('Username sudah digunakan, pilih Username lain.');
-                    document.location='registrasi.php';
-                </script>";
-            exit; // Stop further execution
-        }
+        $login = mysqli_query($koneksi, "SELECT * FROM admin WHERE username='$username' and password='$password'");
+        $cek = mysqli_num_rows($login);
 
-        // If the username is not taken, proceed with the registration
-        $simpan = mysqli_query($koneksi, "INSERT INTO pengguna (nama_lengkap,email,nomor_telepon, username,  password) VALUES ('$_POST[nama_lengkap]','$_POST[email]','$_POST[nomor_telepon]','$_POST[username]','$password')");
+		$loginPengguna = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE username='$username' and password='$password'");
+        $cekPengguna = mysqli_num_rows($loginPengguna);
 
-        if ($simpan) {
+        if($cek > 0) {
+            $admin_data = mysqli_fetch_assoc($login);
+            $_SESSION['id_admin'] = $admin_data['id'];
+            $_SESSION['nama_admin'] = $admin_data['nama'];
+            $_SESSION['username_admin'] = $username;
+            $_SESSION['status'] = "login";
+            header('location:admin');
+
+         } else if($cekPengguna > 0) {
+			$admin_data = mysqli_fetch_assoc($loginPengguna);
+			$_SESSION['id_pengguna'] = $admin_data['id_pengguna'];
+			$_SESSION['nama_pengguna'] = $admin_data['nama_lengkap'];
+			$_SESSION['email'] = $admin_data['email'];
+			$_SESSION['username_pengguna'] = $username;
+			$_SESSION['status'] = "login";
+			header('location:pengguna');
+         }   
+		else {
             echo "<script>
-                    alert('Berhasil Registrasi!');
-                    document.location='login.php';
-                </script>";
-        } else {
-            echo "<script>
-                    alert('Gagal!');
-                    document.location='registrasi.php';
-                </script>";
+            alert('Login Gagal, Periksa Username dan Password Anda!');
+            header('location:login.php');
+                 </script>";
         }
     }
 
@@ -66,7 +78,7 @@
 	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 	<link href="assets/css/app.css" rel="stylesheet">
 	<link href="assets/css/icons.css" rel="stylesheet">
-	<title>Registrasi</title>
+	<title>Login</title>
 </head>
 
 <body class="">
@@ -84,40 +96,28 @@
 									</div>
 									<div class="text-center mb-4">
 										<h5 class="">E Wallet</h5>
-										<p class="mb-0">Create an E-Wallet account</p>
+										<p class="mb-0">Please log in to your account</p>
 									</div>
 									<div class="form-body">
 										<form class="row g-3" method="POST">
 											<div class="col-12">
-												<label for="nama" class="form-label">Nama Lengkap</label>
-												<input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" placeholder="Nama Lengkap"  required>
-											</div>
-											<div class="col-12">
-												<label for="email" class="form-label">Email</label>
-												<input type="email" class="form-control" id="email" name="email" placeholder="Email" required>
-											</div>
-											<div class="col-12">
-												<label for="telepon" class="form-label">No. Telepon</label>
-												<input type="text" class="form-control" id="nomor_telepon" name="nomor_telepon" placeholder="No. Telepon" required>
-											</div>
-											<div class="col-12">
 												<label for="username" class="form-label">Username</label>
-												<input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+												<input type="text" class="form-control" id="username" name="username" placeholder="Username">
 											</div>
 											<div class="col-12">
 												<label for="inputChoosePassword" class="form-label">Password</label>
 												<div class="input-group" id="show_hide_password">
-													<input type="password" name="password" class="form-control border-end-0" id="inputChoosePassword" placeholder="Enter Password" required> <a href="javascript:;" class="input-group-text bg-transparent"><i class='bx bx-hide'></i></a>
+													<input type="password" name="password" class="form-control border-end-0" id="inputChoosePassword" placeholder="Enter Password"> <a href="javascript:;" class="input-group-text bg-transparent"><i class='bx bx-hide'></i></a>
 												</div>
 											</div>
 											<div class="col-12">
 												<div class="d-grid">
-													<button type="submit" name="registrasi" class="btn btn-primary">Registrasi</button>
+													<button type="submit" name="login" class="btn btn-primary">Login</button>
 												</div>
 											</div>
 											<div class="col-12">
 												<div class="text-center ">
-													<p class="mb-0">Sudah Punya Akun? <a href="login.php">Login</a></p>
+													<p class="mb-0">Belum Punya Akun? <a href="registrasi.php">Registrasi</a></p>
 												</div>
 											</div>
 										</form>

@@ -1,164 +1,399 @@
-
-<?php
-
-    include 'koneksi.php';
-
-    session_start();
-
-    if (isset($_SESSION['status']) && $_SESSION['status'] == 'login') {
-
-		if (isset($_SESSION['id_admin'])) {
-			header('Location:admin');
-			exit();
-		} else {
-			header("location:pengguna");
-			exit();
-		}
-	
-	}
-
-    if(isset($_POST['login'])){
-
-        $username = $_POST['username'];
-        $password = md5($_POST['password']);
-
-        $login = mysqli_query($koneksi, "SELECT * FROM admin WHERE username='$username' and password='$password'");
-        $cek = mysqli_num_rows($login);
-
-		$loginPengguna = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE username='$username' and password='$password'");
-        $cekPengguna = mysqli_num_rows($loginPengguna);
-
-        if($cek > 0) {
-            $admin_data = mysqli_fetch_assoc($login);
-            $_SESSION['id_admin'] = $admin_data['id'];
-            $_SESSION['nama_admin'] = $admin_data['nama'];
-            $_SESSION['username_admin'] = $username;
-            $_SESSION['status'] = "login";
-            header('location:admin');
-
-         } else if($cekPengguna > 0) {
-			$admin_data = mysqli_fetch_assoc($loginPengguna);
-			$_SESSION['id_pengguna'] = $admin_data['id_pengguna'];
-			$_SESSION['nama_pengguna'] = $admin_data['nama_lengkap'];
-			$_SESSION['email'] = $admin_data['email'];
-			$_SESSION['username_pengguna'] = $username;
-			$_SESSION['status'] = "login";
-			header('location:pengguna');
-         }   
-		else {
-            echo "<script>
-            alert('Login Gagal, Periksa Username dan Password Anda!');
-            header('location:index.php');
-                 </script>";
-        }
-    }
-
-?>
-
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
-	<!-- Required meta tags -->
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<!--favicon-->
-	<link rel="icon" href="assets/images/favicon-32x32.png" type="image/png" />
-	<!--plugins-->
-	<link href="assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
-	<link href="assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
-	<link href="assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet" />
-	<!-- loader-->
-	<link href="assets/css/pace.min.css" rel="stylesheet" />
-	<script src="assets/js/pace.min.js"></script>
-	<!-- Bootstrap CSS -->
-	<link href="assets/css/bootstrap.min.css" rel="stylesheet">
-	<link href="assets/css/bootstrap-extended.css" rel="stylesheet">
-	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-	<link href="assets/css/app.css" rel="stylesheet">
-	<link href="assets/css/icons.css" rel="stylesheet">
-	<title>Login</title>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>E-Wallet QRCode</title>
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+
+  <!-- Favicons -->
+  <link href="home/assets/img/favicon.png" rel="icon">
+  <link href="home/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Raleway:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="home/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="home/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="home/assets/vendor/aos/aos.css" rel="stylesheet">
+  <link href="home/assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
+  <link href="home/assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+
+  <!-- Main CSS File -->
+  <link href="home/assets/css/main.css" rel="stylesheet">
+
+  <!-- =======================================================
+  * Template Name: Mentor
+  * Template URL: https://bootstrapmade.com/mentor-free-education-bootstrap-theme/
+  * Updated: Aug 07 2024 with Bootstrap v5.3.3
+  * Author: BootstrapMade.com
+  * License: https://bootstrapmade.com/license/
+  ======================================================== -->
 </head>
 
-<body class="">
-	<!--wrapper-->
-	<div class="wrapper">
-		<div class="section-authentication-signin d-flex align-items-center justify-content-center my-5 my-lg-0">
-			<div class="container">
-				<div class="row row-cols-1 row-cols-lg-2 row-cols-xl-3">
-					<div class="col mx-auto">
-						<div class="card mb-0">
-							<div class="card-body">
-								<div class="p-4">
-									<div class="mb-3 text-center">
-										<img src="assets/images/ewallet.jpg" width="60" alt="" />
-									</div>
-									<div class="text-center mb-4">
-										<h5 class="">E Wallet</h5>
-										<p class="mb-0">Please log in to your account</p>
-									</div>
-									<div class="form-body">
-										<form class="row g-3" method="POST">
-											<div class="col-12">
-												<label for="username" class="form-label">Username</label>
-												<input type="text" class="form-control" id="username" name="username" placeholder="Username">
-											</div>
-											<div class="col-12">
-												<label for="inputChoosePassword" class="form-label">Password</label>
-												<div class="input-group" id="show_hide_password">
-													<input type="password" name="password" class="form-control border-end-0" id="inputChoosePassword" placeholder="Enter Password"> <a href="javascript:;" class="input-group-text bg-transparent"><i class='bx bx-hide'></i></a>
-												</div>
-											</div>
-											<div class="col-12">
-												<div class="d-grid">
-													<button type="submit" name="login" class="btn btn-primary">Login</button>
-												</div>
-											</div>
-											<div class="col-12">
-												<div class="text-center ">
-													<p class="mb-0">Belum Punya Akun? <a href="registrasi.php">Registrasi</a></p>
-												</div>
-											</div>
-										</form>
-									</div>
+<body class="index-page">
 
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<!--end row-->
-			</div>
-		</div>
-	</div>
-	<!--end wrapper-->
-	<!-- Bootstrap JS -->
-	<script src="assets/js/bootstrap.bundle.min.js"></script>
-	<!--plugins-->
-	<script src="assets/js/jquery.min.js"></script>
-	<script src="assets/plugins/simplebar/js/simplebar.min.js"></script>
-	<script src="assets/plugins/metismenu/js/metisMenu.min.js"></script>
-	<script src="assets/plugins/perfect-scrollbar/js/perfect-scrollbar.js"></script>
-	<!--Password show & hide js -->
-	<script>
-		$(document).ready(function () {
-			$("#show_hide_password a").on('click', function (event) {
-				event.preventDefault();
-				if ($('#show_hide_password input').attr("type") == "text") {
-					$('#show_hide_password input').attr('type', 'password');
-					$('#show_hide_password i').addClass("bx-hide");
-					$('#show_hide_password i').removeClass("bx-show");
-				} else if ($('#show_hide_password input').attr("type") == "password") {
-					$('#show_hide_password input').attr('type', 'text');
-					$('#show_hide_password i').removeClass("bx-hide");
-					$('#show_hide_password i').addClass("bx-show");
-				}
-			});
-		});
-	</script>
-	<!--app JS-->
-	<script src="assets/js/app.js"></script>
+  <header id="header" class="header d-flex align-items-center sticky-top">
+    <div class="container-fluid container-xl position-relative d-flex align-items-center">
+
+      <a href="index.php" class="logo d-flex align-items-center me-auto">
+        <!-- Uncomment the line below if you also wish to use an image logo -->
+        <!-- <img src="assets/img/logo.png" alt=""> -->
+        <h1 class="sitename">E-Wallet</h1>
+      </a>
+
+      <nav id="navmenu" class="navmenu">
+        <ul>
+          <li><a href="index.php" class="active">Home<br></a></li>
+          <li><a href="about.php">About</a></li>
+          <li><a href="contact.php">Contact</a></li>
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
+
+      <a class="btn-getstarted" href="login.php">Login</a>
+
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Bagian Hero -->
+    <section id="hero" class="hero section dark-background">
+
+      <img src="home/assets/img/wallet.jpg" alt="" data-aos="fade-in">
+
+      <div class="container">
+        <h2 data-aos="fade-up" data-aos-delay="100">Scan Hari Ini</h2>
+        <p data-aos="fade-up" data-aos-delay="200">Kami menciptakan solusi pembayaran QR untuk dompet digital</p>
+        <div class="d-flex mt-4" data-aos="fade-up" data-aos-delay="300">
+          <a href="registrasi.php" class="btn-get-started">Mulai Sekarang</a>
+        </div>
+      </div>
+
+    </section><!-- /Bagian Hero -->
+
+    <!-- Bagian Tentang -->
+    <section id="about" class="about section">
+
+      <div class="container">
+
+        <div class="row gy-4">
+
+          <div class="col-lg-6 order-1 order-lg-2" data-aos="fade-up" data-aos-delay="100">
+            <img src="home/assets/img/ewalletlogo.png" class="img-fluid" alt="">
+          </div>
+
+          <div class="col-lg-6 order-2 order-lg-1 content" data-aos="fade-up" data-aos-delay="200">
+            <h3>Teknologi Pembayaran QR</h3>
+            <p class="fst-italic">
+              Solusi e-wallet kami memberikan pengalaman pembayaran yang cepat, aman, dan nyaman melalui teknologi QR code.
+            </p>
+            <ul>
+              <li><i class="bi bi-check-circle"></i> <span>Transfer instan antar pengguna dengan pemindaian QR code</span></li>
+              <li><i class="bi bi-check-circle"></i> <span>Enkripsi aman untuk semua transaksi Anda</span></li>
+              <li><i class="bi bi-check-circle"></i> <span>Integrasi mulus dengan gateway pembayaran Midtrans untuk pengisian saldo mudah</span></li>
+            </ul>
+            <a href="#" class="read-more"><span>Selengkapnya</span><i class="bi bi-arrow-right"></i></a>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section><!-- /Bagian Tentang -->
+
+    <!-- Bagian Penghitungan -->
+    <section id="counts" class="section counts light-background">
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+
+        <div class="row gy-4">
+
+          <div class="col-lg-3 col-md-6">
+            <div class="stats-item text-center w-100 h-100">
+              <span data-purecounter-start="0" data-purecounter-end="123200" data-purecounter-duration="1" class="purecounter"></span>
+              <p>Pengguna Aktif</p>
+            </div>
+          </div><!-- End Item Statistik -->
+
+          <div class="col-lg-3 col-md-6">
+            <div class="stats-item text-center w-100 h-100">
+              <span data-purecounter-start="0" data-purecounter-end="64000" data-purecounter-duration="1" class="purecounter"></span>
+              <p>Transaksi Harian</p>
+            </div>
+          </div><!-- End Item Statistik -->
+
+          <div class="col-lg-3 col-md-6">
+            <div class="stats-item text-center w-100 h-100">
+              <span data-purecounter-start="0" data-purecounter-end="4200" data-purecounter-duration="1" class="purecounter"></span>
+              <p>Mitra Merchant</p>
+            </div>
+          </div><!-- End Item Statistik -->
+
+          <div class="col-lg-3 col-md-6">
+            <div class="stats-item text-center w-100 h-100">
+              <span data-purecounter-start="0" data-purecounter-end="24" data-purecounter-duration="1" class="purecounter"></span>
+              <p>Bank yang Didukung</p>
+            </div>
+          </div><!-- End Item Statistik -->
+
+        </div>
+
+      </div>
+
+    </section><!-- /Bagian Penghitungan -->
+
+    <!-- Bagian Mengapa Kami -->
+    <section id="why-us" class="section why-us">
+
+      <div class="container">
+
+        <div class="row gy-4">
+
+          <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="why-box">
+              <h3>Mengapa Memilih E-Wallet Kami?</h3>
+              <p>
+                Alami masa depan pembayaran dengan teknologi QR code mutakhir kami. Transaksi cepat, aman, dan nyaman di ujung jari Anda.
+                Solusi kami terintegrasi sempurna dengan kebutuhan finansial harian Anda sekaligus memberikan langkah-langkah keamanan yang kuat.
+              </p>
+              <div class="text-center">
+                <a href="#" class="more-btn"><span>Pelajari Lebih Lanjut</span> <i class="bi bi-chevron-right"></i></a>
+              </div>
+            </div>
+          </div><!-- End Kotak Mengapa -->
+
+          <div class="col-lg-8 d-flex align-items-stretch">
+            <div class="row gy-4" data-aos="fade-up" data-aos-delay="200">
+
+              <div class="col-xl-4">
+                <div class="icon-box d-flex flex-column justify-content-center align-items-center">
+                  <i class="bi bi-clipboard-data"></i>
+                  <h4>Analisis Transaksi</h4>
+                  <p>Laporan pengeluaran detail dan wawasan finansial di ujung jari Anda</p>
+                </div>
+              </div><!-- End Kotak Ikon -->
+
+              <div class="col-xl-4" data-aos="fade-up" data-aos-delay="300">
+                <div class="icon-box d-flex flex-column justify-content-center align-items-center">
+                  <i class="bi bi-gem"></i>
+                  <h4>Keamanan Premium</h4>
+                  <p>Enkripsi level bank dan perlindungan penipuan untuk semua transaksi</p>
+                </div>
+              </div><!-- End Kotak Ikon -->
+
+              <div class="col-xl-4" data-aos="fade-up" data-aos-delay="400">
+                <div class="icon-box d-flex flex-column justify-content-center align-items-center">
+                  <i class="bi bi-inboxes"></i>
+                  <h4>Pengisian Saldo Mudah</h4>
+                  <p>Berbagai metode pembayaran termasuk integrasi gateway Midtrans</p>
+                </div>
+              </div><!-- End Kotak Ikon -->
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section><!-- /Bagian Mengapa Kami -->
+
+    <!-- Bagian Fitur -->
+    <section id="features" class="features section">
+
+      <div class="container">
+
+        <div class="row gy-4">
+
+          <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="features-item">
+              <i class="bi bi-eye" style="color: #ffbb2c;"></i>
+              <h3><a href="" class="stretched-link">Pembayaran QR</a></h3>
+            </div>
+          </div><!-- End Item Fitur -->
+
+          <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="200">
+            <div class="features-item">
+              <i class="bi bi-infinity" style="color: #5578ff;"></i>
+              <h3><a href="" class="stretched-link">Pembagian Tagihan</a></h3>
+            </div>
+          </div><!-- End Item Fitur -->
+
+          <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="300">
+            <div class="features-item">
+              <i class="bi bi-mortarboard" style="color: #e80368;"></i>
+              <h3><a href="" class="stretched-link">Cashback</a></h3>
+            </div>
+          </div><!-- End Item Fitur -->
+
+          <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="400">
+            <div class="features-item">
+              <i class="bi bi-nut" style="color: #e361ff;"></i>
+              <h3><a href="" class="stretched-link">Anggaran</a></h3>
+            </div>
+          </div><!-- End Item Fitur -->
+
+          <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="500">
+            <div class="features-item">
+              <i class="bi bi-shuffle" style="color: #47aeff;"></i>
+              <h3><a href="" class="stretched-link">Transfer Bank</a></h3>
+            </div>
+          </div><!-- End Item Fitur -->
+
+          <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="600">
+            <div class="features-item">
+              <i class="bi bi-star" style="color: #ffa76e;"></i>
+              <h3><a href="" class="stretched-link">Hadiah</a></h3>
+            </div>
+          </div><!-- End Item Fitur -->
+
+          <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="700">
+            <div class="features-item">
+              <i class="bi bi-x-diamond" style="color: #11dbcf;"></i>
+              <h3><a href="" class="stretched-link">Voucher</a></h3>
+            </div>
+          </div><!-- End Item Fitur -->
+
+          <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="800">
+            <div class="features-item">
+              <i class="bi bi-camera-video" style="color: #4233ff;"></i>
+              <h3><a href="" class="stretched-link">Pembayaran</a></h3>
+            </div>
+          </div><!-- End Item Fitur -->
+
+          <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="900">
+            <div class="features-item">
+              <i class="bi bi-command" style="color: #b2904f;"></i>
+              <h3><a href="" class="stretched-link">Target Tabungan</a></h3>
+            </div>
+          </div><!-- End Item Fitur -->
+
+          <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="1000">
+            <div class="features-item">
+              <i class="bi bi-dribbble" style="color: #b20969;"></i>
+              <h3><a href="" class="stretched-link">Investasi</a></h3>
+            </div>
+          </div><!-- End Item Fitur -->
+
+          <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="1100">
+            <div class="features-item">
+              <i class="bi bi-activity" style="color: #ff5828;"></i>
+              <h3><a href="" class="stretched-link">Pelacak Pengeluaran</a></h3>
+            </div>
+          </div><!-- End Item Fitur -->
+
+          <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="1200">
+            <div class="features-item">
+              <i class="bi bi-brightness-high" style="color: #29cc61;"></i>
+              <h3><a href="" class="stretched-link">Isi Ulang Pulsa</a></h3>
+            </div>
+          </div><!-- End Item Fitur -->
+
+        </div>
+
+      </div>
+
+    </section><!-- /Bagian Fitur -->
+
+
+
+  </main>
+
+  <footer id="footer" class="footer position-relative light-background">
+
+    <div class="container footer-top">
+      <div class="row gy-4">
+        <div class="col-lg-4 col-md-6 footer-about">
+          <a href="index.php" class="logo d-flex align-items-center">
+            <span class="sitename">E-Wallet</span>
+          </a>
+          <div class="footer-contact pt-3">
+            <p>Perintis</p>
+            <p>Makassar, Indonesia</p>
+            <p class="mt-3"><strong>Phone:</strong> <span>+62853xxxx</span></p>
+            <p><strong>Email:</strong> <span>ewallet@example.com</span></p>
+          </div>
+          <div class="social-links d-flex mt-4">
+            <a href=""><i class="bi bi-twitter-x"></i></a>
+            <a href=""><i class="bi bi-facebook"></i></a>
+            <a href=""><i class="bi bi-instagram"></i></a>
+            <a href=""><i class="bi bi-linkedin"></i></a>
+          </div>
+        </div>
+
+        <div class="col-lg-2 col-md-3 footer-links">
+          <h4>Useful Links</h4>
+          <ul>
+            <li><a href="#">Home</a></li>
+            <li><a href="#">About us</a></li>
+            <li><a href="#">Services</a></li>
+            <li><a href="#">Terms of service</a></li>
+            <li><a href="#">Privacy policy</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-2 col-md-3 footer-links">
+          <h4>Our Services</h4>
+          <ul>
+            <li><a href="#">Web Design</a></li>
+            <li><a href="#">Web Development</a></li>
+            <li><a href="#">Product Management</a></li>
+            <li><a href="#">Marketing</a></li>
+            <li><a href="#">Graphic Design</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-4 col-md-12 footer-newsletter">
+          <h4>Our Newsletter</h4>
+          <p>Subscribe to our newsletter and receive the latest news about our products and services!</p>
+          <form action="forms/newsletter.php" method="post" class="php-email-form">
+            <div class="newsletter-form"><input type="email" name="email"><input type="submit" value="Subscribe"></div>
+            <div class="loading">Loading</div>
+            <div class="error-message"></div>
+            <div class="sent-message">Your subscription request has been sent. Thank you!</div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="container copyright text-center mt-4">
+      <p>© <span>Copyright</span> <strong class="px-1 sitename">E-Wallet</strong> <span>All Rights Reserved</span></p>
+      <div class="credits">
+        <!-- All the links in the footer should remain intact. -->
+        <!-- You can delete the links only if you've purchased the pro version. -->
+        <!-- Licensing information: https://bootstrapmade.com/license/ -->
+        <!-- Purchase the pro version with working PHP/AJAX contact form: [buy-url] -->
+        Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a>
+      </div>
+    </div>
+
+  </footer>
+
+  <!-- Scroll Top -->
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <!-- Preloader -->
+  <div id="preloader"></div>
+
+  <!-- Vendor JS Files -->
+  <script src="home/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="home/assets/vendor/php-email-form/validate.js"></script>
+  <script src="home/assets/vendor/aos/aos.js"></script>
+  <script src="home/assets/vendor/glightbox/js/glightbox.min.js"></script>
+  <script src="home/assets/vendor/purecounter/purecounter_vanilla.js"></script>
+  <script src="home/assets/vendor/swiper/swiper-bundle.min.js"></script>
+
+  <!-- Main JS File -->
+  <script src="home/assets/js/main.js"></script>
+
 </body>
 
 </html>
