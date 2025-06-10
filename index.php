@@ -163,9 +163,7 @@
                 Alami masa depan pembayaran dengan teknologi QR code mutakhir kami. Transaksi cepat, aman, dan nyaman di ujung jari Anda.
                 Solusi kami terintegrasi sempurna dengan kebutuhan finansial harian Anda sekaligus memberikan langkah-langkah keamanan yang kuat.
               </p>
-              <div class="text-center">
-                <a href="#" class="more-btn"><span>Pelajari Lebih Lanjut</span> <i class="bi bi-chevron-right"></i></a>
-              </div>
+
             </div>
           </div><!-- End Kotak Mengapa -->
 
