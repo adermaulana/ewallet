@@ -115,33 +115,20 @@
 
         <div class="row gy-4">
 
-          <div class="col-lg-3 col-md-6">
+          <div class="col-lg-6 col-md-6">
             <div class="stats-item text-center w-100 h-100">
               <span data-purecounter-start="0" data-purecounter-end="123200" data-purecounter-duration="1" class="purecounter"></span>
               <p>Pengguna Aktif</p>
             </div>
           </div><!-- End Item Statistik -->
 
-          <div class="col-lg-3 col-md-6">
+          <div class="col-lg-6 col-md-6">
             <div class="stats-item text-center w-100 h-100">
               <span data-purecounter-start="0" data-purecounter-end="64000" data-purecounter-duration="1" class="purecounter"></span>
               <p>Transaksi Harian</p>
             </div>
           </div><!-- End Item Statistik -->
 
-          <div class="col-lg-3 col-md-6">
-            <div class="stats-item text-center w-100 h-100">
-              <span data-purecounter-start="0" data-purecounter-end="4200" data-purecounter-duration="1" class="purecounter"></span>
-              <p>Mitra Merchant</p>
-            </div>
-          </div><!-- End Item Statistik -->
-
-          <div class="col-lg-3 col-md-6">
-            <div class="stats-item text-center w-100 h-100">
-              <span data-purecounter-start="0" data-purecounter-end="24" data-purecounter-duration="1" class="purecounter"></span>
-              <p>Bank yang Didukung</p>
-            </div>
-          </div><!-- End Item Statistik -->
 
         </div>
 
