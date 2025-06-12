@@ -289,7 +289,7 @@ if(isset($_GET['hal']) == "kembalikan"){
                         "SELECT 
                             COUNT(*) as total_goals,
                             COUNT(CASE WHEN status = 'aktif' THEN 1 END) as aktif_goals,
-                            COUNT(CASE WHEN status = 'tercapai' THEN 1 END) as tercapai_goals,
+                            COUNT(CASE WHEN status = 'selesai' || status = 'tercapai' THEN 1 END) as tercapai_goals,
                             SUM(CASE WHEN status = 'aktif' THEN target_jumlah ELSE 0 END) as total_target,
                             SUM(CASE WHEN status = 'aktif' THEN jumlah_terkumpul ELSE 0 END) as total_terkumpul
                         FROM savings_goals 
