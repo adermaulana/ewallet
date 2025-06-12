@@ -24,19 +24,7 @@ if (isset($_POST['simpan_tabungan'])) {
     $deskripsi = isset($_POST['deskripsi']) ? mysqli_real_escape_string($koneksi, $_POST['deskripsi']) : null;
     $status = 'aktif';
     $tanggal_dibuat = mysqli_real_escape_string($koneksi, $_POST['tanggal_dibuat']);
-    
-    // Handle auto save fields
-    $auto_save_aktif = isset($_POST['auto_save_aktif']) ? 1 : 0;
-    $jumlah_auto_save = $auto_save_aktif ? mysqli_real_escape_string($koneksi, $_POST['jumlah_auto_save']) : 0;
-    $frekuensi_auto_save = $auto_save_aktif ? mysqli_real_escape_string($koneksi, $_POST['frekuensi_auto_save']) : null;
-    $tanggal_auto_save_terakhir = null;
-    
-    // Set tanggal auto save untuk frekuensi bulanan
-    if ($auto_save_aktif && $frekuensi_auto_save == 'bulan') {
-        $tanggal_auto_save = mysqli_real_escape_string($koneksi, $_POST['tanggal_auto_save']);
-    } else {
-        $tanggal_auto_save = null;
-    }
+
     
     // Validasi data
     if (empty($nama_goal) || empty($target_jumlah)) {
@@ -55,26 +43,14 @@ if (isset($_POST['simpan_tabungan'])) {
         exit;
     }
     
-    if ($auto_save_aktif && $jumlah_auto_save < 1000) {
-        echo "<script>
-                alert('Jumlah auto save minimal Rp1.000!');
-                document.location='tambahtabungan.php';
-            </script>";
-        exit;
-    }
 
     // Insert data ke database
     $simpan = mysqli_query($koneksi, "INSERT INTO savings_goals 
                         (id_pengguna, nama_goal, target_jumlah, jumlah_terkumpul, 
-                         target_tanggal, auto_save_aktif, jumlah_auto_save, 
-                         frekuensi_auto_save, tanggal_auto_save_terakhir, 
-                         ikon, deskripsi, status, tanggal_dibuat) 
+                         target_tanggal, ikon, deskripsi, status, tanggal_dibuat) 
                         VALUES 
                         ('$id_pengguna', '$nama_goal', '$target_jumlah', 0,
                          " . ($target_tanggal ? "'$target_tanggal'" : "NULL") . ", 
-                         '$auto_save_aktif', '$jumlah_auto_save',
-                         " . ($frekuensi_auto_save ? "'$frekuensi_auto_save'" : "NULL") . ", 
-                         NULL,
                          '$ikon', 
                          " . ($deskripsi ? "'$deskripsi'" : "NULL") . ", 
                          '$status', '$tanggal_dibuat')");
@@ -325,42 +301,7 @@ if (isset($_POST['simpan_tabungan'])) {
                                     <label for="target_tanggal" class="form-label">Target Tanggal (Opsional)</label>
                                     <input type="date" class="form-control" name="target_tanggal" id="target_tanggal" min="<?= date('Y-m-d') ?>">
                                 </div>
-                                
-                                <div id="auto_save_fields" style="display:none;">
-                                    <div class="row">
-                                        <!-- Jumlah Auto Save -->
-                                        <div class="col-md-4 mb-3">
-                                            <label for="jumlah_auto_save" class="form-label">Jumlah Auto Save</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text">Rp</span>
-                                                <input type="number" class="form-control" name="jumlah_auto_save" id="jumlah_auto_save" min="1000">
-                                            </div>
-                                            <small class="text-muted">Minimal Rp1.000</small>
-                                        </div>
-                                        
-                                        <!-- Frekuensi Auto Save -->
-                                        <div class="col-md-4 mb-3">
-                                            <label for="frekuensi_auto_save" class="form-label">Frekuensi</label>
-                                            <select class="form-select" name="frekuensi_auto_save" id="frekuensi_auto_save">
-                                                <option value="hari">Harian</option>
-                                                <option value="minggu">Mingguan</option>
-                                                <option value="bulan" selected>Bulanan</option>
-                                            </select>
-                                        </div>
-                                        
-                                        <!-- Tanggal Auto Save -->
-                                        <div class="col-md-4 mb-3" id="tanggal_auto_save_field">
-                                            <label for="tanggal_auto_save" class="form-label">Tanggal</label>
-                                            <select class="form-select" name="tanggal_auto_save" id="tanggal_auto_save">
-                                                <?php for ($i = 1; $i <= 28; $i++): ?>
-                                                    <option value="<?= $i ?>" <?= $i == date('j') ? 'selected' : '' ?>>
-                                                        <?= $i ?>
-                                                    </option>
-                                                <?php endfor; ?>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
+                        
                                 
                                 <!-- Tombol Submit -->
                                 <div class="col-12">
@@ -569,26 +510,6 @@ if (isset($_POST['simpan_tabungan'])) {
 				.appendTo( '#example2_wrapper .col-md-6:eq(0)' );
 		} );
 	</script>
-
-    <script>
-    // Show/hide auto save fields
-    document.getElementById('auto_save_aktif').addEventListener('change', function() {
-        const autoSaveFields = document.getElementById('auto_save_fields');
-        autoSaveFields.style.display = this.checked ? 'block' : 'none';
-        
-        // Set required attribute if checked
-        const requiredFields = autoSaveFields.querySelectorAll('[name="jumlah_auto_save"], [name="frekuensi_auto_save"]');
-        requiredFields.forEach(field => {
-            field.required = this.checked;
-        });
-    });
-
-    // Show/hide tanggal field based on frequency
-    document.getElementById('frekuensi_auto_save').addEventListener('change', function() {
-        const tanggalField = document.getElementById('tanggal_auto_save_field');
-        tanggalField.style.display = this.value === 'bulan' ? 'block' : 'none';
-    });
-    </script>
 
 	<script src="../assets/js/app.js"></script>
 	<script>
