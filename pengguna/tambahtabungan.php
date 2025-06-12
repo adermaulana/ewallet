@@ -13,14 +13,83 @@ if ($_SESSION['status'] != 'login') {
     header('location:../');
 }
 
-$query = mysqli_query($koneksi, "SELECT saldo, nomor_rekening FROM pengguna WHERE id_pengguna = '$id_pengguna'");
-$data_pengguna = mysqli_fetch_assoc($query);
-$saldo = $data_pengguna['saldo'] ?? 0;
-$no_rekening = $data_pengguna['no_rekening'] ?? 'Belum terdaftar';
 
-// Format saldo ke Rupiah
-function formatRupiah($angka) {
-    return 'Rp ' . number_format($angka, 0, ',', '.');
+if (isset($_POST['simpan_tabungan'])) {
+    // Ambil data dari form
+    $id_pengguna = mysqli_real_escape_string($koneksi, $_POST['id_pengguna']);
+    $nama_goal = mysqli_real_escape_string($koneksi, $_POST['nama_goal']);
+    $target_jumlah = mysqli_real_escape_string($koneksi, $_POST['target_jumlah']);
+    $target_tanggal = isset($_POST['target_tanggal']) ? mysqli_real_escape_string($koneksi, $_POST['target_tanggal']) : null;
+    $ikon = mysqli_real_escape_string($koneksi, $_POST['ikon']);
+    $deskripsi = isset($_POST['deskripsi']) ? mysqli_real_escape_string($koneksi, $_POST['deskripsi']) : null;
+    $status = 'aktif';
+    $tanggal_dibuat = mysqli_real_escape_string($koneksi, $_POST['tanggal_dibuat']);
+    
+    // Handle auto save fields
+    $auto_save_aktif = isset($_POST['auto_save_aktif']) ? 1 : 0;
+    $jumlah_auto_save = $auto_save_aktif ? mysqli_real_escape_string($koneksi, $_POST['jumlah_auto_save']) : 0;
+    $frekuensi_auto_save = $auto_save_aktif ? mysqli_real_escape_string($koneksi, $_POST['frekuensi_auto_save']) : null;
+    $tanggal_auto_save_terakhir = null;
+    
+    // Set tanggal auto save untuk frekuensi bulanan
+    if ($auto_save_aktif && $frekuensi_auto_save == 'bulan') {
+        $tanggal_auto_save = mysqli_real_escape_string($koneksi, $_POST['tanggal_auto_save']);
+    } else {
+        $tanggal_auto_save = null;
+    }
+    
+    // Validasi data
+    if (empty($nama_goal) || empty($target_jumlah)) {
+        echo "<script>
+                alert('Nama goal dan target jumlah harus diisi!');
+                document.location='tambahtabungan.php';
+            </script>";
+        exit;
+    }
+    
+    if ($target_jumlah < 10000) {
+        echo "<script>
+                alert('Target jumlah minimal Rp10.000!');
+                document.location='tambahtabungan.php';
+            </script>";
+        exit;
+    }
+    
+    if ($auto_save_aktif && $jumlah_auto_save < 1000) {
+        echo "<script>
+                alert('Jumlah auto save minimal Rp1.000!');
+                document.location='tambahtabungan.php';
+            </script>";
+        exit;
+    }
+
+    // Insert data ke database
+    $simpan = mysqli_query($koneksi, "INSERT INTO savings_goals 
+                        (id_pengguna, nama_goal, target_jumlah, jumlah_terkumpul, 
+                         target_tanggal, auto_save_aktif, jumlah_auto_save, 
+                         frekuensi_auto_save, tanggal_auto_save_terakhir, 
+                         ikon, deskripsi, status, tanggal_dibuat) 
+                        VALUES 
+                        ('$id_pengguna', '$nama_goal', '$target_jumlah', 0,
+                         " . ($target_tanggal ? "'$target_tanggal'" : "NULL") . ", 
+                         '$auto_save_aktif', '$jumlah_auto_save',
+                         " . ($frekuensi_auto_save ? "'$frekuensi_auto_save'" : "NULL") . ", 
+                         NULL,
+                         '$ikon', 
+                         " . ($deskripsi ? "'$deskripsi'" : "NULL") . ", 
+                         '$status', '$tanggal_dibuat')");
+
+    if ($simpan) {
+        echo "<script>
+                alert('Tabungan baru berhasil dibuat!');
+                document.location='tabungan.php';
+            </script>";
+    } else {
+        echo "<script>
+                alert('Gagal membuat tabungan: ".mysqli_error($koneksi)."');
+                document.location='tambahtabungan.php';
+            </script>";
+    }
 }
 
 ?>
@@ -189,121 +258,123 @@ function formatRupiah($angka) {
 		</header>
 		<!--end header -->
 
-		<div class="page-wrapper">
-			<div class="page-content">
-				<!--breadcrumb-->
-				<div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-					<div class="breadcrumb-title pe-3">Transaksi</div>
-					<div class="ps-3">
-						<nav aria-label="breadcrumb">
-							<ol class="breadcrumb mb-0 p-0">
-								<li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a>
-								</li>
-								<li class="breadcrumb-item active" aria-current="page">Halaman Transaksi</li>
-							</ol>
-						</nav>
-					</div>
-				</div>
-
-				<hr/>
-				<div class="card">
-					<div class="card-body">
-						<div class="table-responsive">
-						<table id="example" class="table table-striped table-bordered" style="width:100%">
-							<thead>
-								<tr>
-									<th>No</th>
-									<th>Tanggal Top Up</th>
-									<th>Nomor Referensi</th>
-									<th>Jumlah</th>
-									<th>Metode Pembayaran</th>
-									<th>Bukti Pembayaran</th>
-									<th>Status</th>
-								</tr>
-							</thead>
-							<tbody>
-							<?php
-								$no = 1;
-								$tampil = mysqli_query($koneksi, 
-									"SELECT * FROM top_up WHERE id_pengguna = '$id_pengguna' ORDER BY tanggal_top_up DESC");
-								while($data = mysqli_fetch_array($tampil)):
-							?>
-								<tr>
-									<td><?= $no++ ?></td>
-									<td><?= date('d/m/Y H:i', strtotime($data['tanggal_top_up'])) ?></td>
-									<td><?= $data['nomor_referensi'] ?></td>
-									<td>Rp <?= number_format($data['jumlah'], 0, ',', '.') ?></td>
-									<td><?= ucfirst($data['metode_pembayaran']) ?></td>
-									<td>
-										<?php if(!empty($data['bukti_pembayaran'])): ?>
-											<a href="bukti_pembayaran/<?= $data['bukti_pembayaran'] ?>" target="_blank" class="btn btn-sm btn-primary">Lihat Bukti</a>
-										<?php else: ?>
-											<?php if($data['status'] == 'pending'): ?>
-												<button type="button" class="btn btn-sm btn-warning upload-bukti" 
-														onclick="openUploadModal('<?= $data['id_top_up'] ?>')">
-													<i class="fa fa-upload"></i> Upload Bukti
-												</button>
-											<?php else: ?>
-												<span class="text-muted">Tidak ada bukti</span>
-											<?php endif; ?>
-										<?php endif; ?>
-									</td>
-									<td>
-										<?php 
-										$status_class = '';
-										if($data['status'] == 'pending') $status_class = 'warning';
-										elseif($data['status'] == 'sukses') $status_class = 'success';
-										elseif($data['status'] == 'gagal') $status_class = 'danger';
-										?>
-										<span class="badge bg-<?= $status_class ?>"><?= ucfirst($data['status']) ?></span>
-									</td>
-								</tr>
-							<?php endwhile; ?>
-							</tbody>
-							<tfoot>
-								<tr>
-									<th>No</th>
-									<th>Tanggal Top Up</th>
-									<th>Nomor Referensi</th>
-									<th>Jumlah</th>
-									<th>Metode Pembayaran</th>
-									<th>Bukti Pembayaran</th>
-									<th>Status</th>
-								</tr>
-							</tfoot>
-						</table>
-
-						<div id="uploadBuktiModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
-							<div class="modal-dialog" style="margin: 10% auto; width: 90%; max-width: 500px;">
-								<div class="modal-content" style="background-color: #fefefe; padding: 20px; border: 1px solid #888; border-radius: 5px;">
-									<div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 20px;">
-										<h5 class="modal-title">Upload Bukti Pembayaran</h5>
-										<span class="close" onclick="closeModal()" style="font-size: 24px; cursor: pointer;">&times;</span>
-									</div>
-									<form id="formUploadBukti" action="proses_upload_bukti.php" method="post" enctype="multipart/form-data">
-										<div class="modal-body">
-											<input type="hidden" name="id_top_up" id="id_top_up_upload">
-											
-											<div class="form-group" style="margin-bottom: 15px;">
-												<label for="bukti_pembayaran" style="display: block; margin-bottom: 5px;">File Bukti Pembayaran (JPG/PNG)</label>
-												<input type="file" class="form-control-file" id="bukti_pembayaran" name="bukti_pembayaran" accept="image/jpeg,image/png" required>
-												<small class="form-text text-muted" style="display: block; margin-top: 5px; font-size: 0.875em; color: #6c757d;">Ukuran maksimal file 2MB</small>
-											</div>
-										</div>
-										<div class="modal-footer" style="padding-top: 15px; border-top: 1px solid #ddd; margin-top: 15px; display: flex; justify-content: flex-end;">
-											<button type="button" class="btn btn-secondary" onclick="closeModal()" style="margin-right: 10px; padding: 6px 12px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Batal</button>
-											<button type="submit" class="btn btn-primary" style="padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Upload</button>
-										</div>
-									</form>
-								</div>
-							</div>
-						</div>
-						</div>
-					</div>
-				</div>
-
-			</div>
-		</div>
+        <div class="page-wrapper">
+            <div class="page-content">
+                <!--breadcrumb-->
+                <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+                    <div class="breadcrumb-title pe-3">Savings Goals</div>
+                    <div class="ps-3">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0 p-0">
+                                <li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a>
+                                </li>
+                                <li class="breadcrumb-item active" aria-current="page">Tambah Tabungan Baru</li>
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+                <!--end breadcrumb-->
+                <hr/>
+                <div class="card">
+                    <div class="card-body">
+                        <form method="post" action="">
+                            <input type="hidden" name="id_pengguna" value="<?= $id_pengguna ?>">
+                            <input type="hidden" name="status" value="aktif">
+                            <input type="hidden" name="tanggal_dibuat" value="<?= date('Y-m-d H:i:s') ?>">
+                            
+                            <div class="row">
+                                <!-- Nama Goal -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="nama_goal" class="form-label">Nama Tabungan/Tujuan</label>
+                                    <input type="text" class="form-control" name="nama_goal" id="nama_goal" required placeholder="Contoh: Liburan ke Bali, Beli Laptop Baru">
+                                </div>
+                                
+                                <!-- Ikon -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="ikon" class="form-label">Ikon</label>
+                                    <select class="form-select" name="ikon" id="ikon">
+                                        <option value="💰">💰 Tabung</option>
+                                        <option value="🏠">🏠 Rumah</option>
+                                        <option value="🚗">🚗 Mobil</option>
+                                        <option value="✈️">✈️ Liburan</option>
+                                        <option value="🎓">🎓 Pendidikan</option>
+                                        <option value="💍">💍 Pernikahan</option>
+                                        <option value="📱">📱 Gadget</option>
+                                        <option value="🛒">🛒 Belanja</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Deskripsi -->
+                                <div class="col-12 mb-3">
+                                    <label for="deskripsi" class="form-label">Deskripsi (Opsional)</label>
+                                    <textarea class="form-control" name="deskripsi" id="deskripsi" rows="2" placeholder="Tambahkan deskripsi tentang tujuan tabungan ini"></textarea>
+                                </div>
+                                
+                                <!-- Target Jumlah -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="target_jumlah" class="form-label">Target Jumlah</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="number" class="form-control" name="target_jumlah" id="target_jumlah" required min="10000">
+                                    </div>
+                                    <small class="text-muted">Minimal Rp10.000</small>
+                                </div>
+                                
+                                <!-- Target Tanggal -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="target_tanggal" class="form-label">Target Tanggal (Opsional)</label>
+                                    <input type="date" class="form-control" name="target_tanggal" id="target_tanggal" min="<?= date('Y-m-d') ?>">
+                                </div>
+                                
+                                <div id="auto_save_fields" style="display:none;">
+                                    <div class="row">
+                                        <!-- Jumlah Auto Save -->
+                                        <div class="col-md-4 mb-3">
+                                            <label for="jumlah_auto_save" class="form-label">Jumlah Auto Save</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">Rp</span>
+                                                <input type="number" class="form-control" name="jumlah_auto_save" id="jumlah_auto_save" min="1000">
+                                            </div>
+                                            <small class="text-muted">Minimal Rp1.000</small>
+                                        </div>
+                                        
+                                        <!-- Frekuensi Auto Save -->
+                                        <div class="col-md-4 mb-3">
+                                            <label for="frekuensi_auto_save" class="form-label">Frekuensi</label>
+                                            <select class="form-select" name="frekuensi_auto_save" id="frekuensi_auto_save">
+                                                <option value="hari">Harian</option>
+                                                <option value="minggu">Mingguan</option>
+                                                <option value="bulan" selected>Bulanan</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Tanggal Auto Save -->
+                                        <div class="col-md-4 mb-3" id="tanggal_auto_save_field">
+                                            <label for="tanggal_auto_save" class="form-label">Tanggal</label>
+                                            <select class="form-select" name="tanggal_auto_save" id="tanggal_auto_save">
+                                                <?php for ($i = 1; $i <= 28; $i++): ?>
+                                                    <option value="<?= $i ?>" <?= $i == date('j') ? 'selected' : '' ?>>
+                                                        <?= $i ?>
+                                                    </option>
+                                                <?php endfor; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tombol Submit -->
+                                <div class="col-12">
+                                    <div class="d-md-flex d-grid align-items-center gap-3">
+                                        <button type="submit" name="simpan_tabungan" class="btn btn-primary px-4">Simpan Tabungan</button>
+                                        <button type="reset" class="btn btn-light px-4">Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
 
 		<!--end page wrapper -->
 		<!--start overlay-->
@@ -499,41 +570,31 @@ function formatRupiah($angka) {
 		} );
 	</script>
 
+    <script>
+    // Show/hide auto save fields
+    document.getElementById('auto_save_aktif').addEventListener('change', function() {
+        const autoSaveFields = document.getElementById('auto_save_fields');
+        autoSaveFields.style.display = this.checked ? 'block' : 'none';
+        
+        // Set required attribute if checked
+        const requiredFields = autoSaveFields.querySelectorAll('[name="jumlah_auto_save"], [name="frekuensi_auto_save"]');
+        requiredFields.forEach(field => {
+            field.required = this.checked;
+        });
+    });
+
+    // Show/hide tanggal field based on frequency
+    document.getElementById('frekuensi_auto_save').addEventListener('change', function() {
+        const tanggalField = document.getElementById('tanggal_auto_save_field');
+        tanggalField.style.display = this.value === 'bulan' ? 'block' : 'none';
+    });
+    </script>
+
 	<script src="../assets/js/app.js"></script>
 	<script>
 		new PerfectScrollbar(".app-container")
 	</script>
 
-<script>
-// Fungsi untuk membuka modal
-function openUploadModal(id_top_up) {
-    // Set nilai pada form
-    document.getElementById('id_top_up_upload').value = id_top_up;
-    
-    // Tampilkan modal
-    document.getElementById('uploadBuktiModal').style.display = 'block';
-}
-
-// Fungsi untuk menutup modal
-function closeModal() {
-    document.getElementById('uploadBuktiModal').style.display = 'none';
-}
-
-// Menutup modal jika user mengklik di luar modal
-window.onclick = function(event) {
-    var modal = document.getElementById('uploadBuktiModal');
-    if (event.target == modal) {
-        modal.style.display = 'none';
-    }
-}
-
-// Menangani klik tombol Escape untuk menutup modal
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        closeModal();
-    }
-});
-</script>
 
 </body>
 

@@ -13,14 +13,88 @@ if ($_SESSION['status'] != 'login') {
     header('location:../');
 }
 
-$query = mysqli_query($koneksi, "SELECT saldo, nomor_rekening FROM pengguna WHERE id_pengguna = '$id_pengguna'");
-$data_pengguna = mysqli_fetch_assoc($query);
-$saldo = $data_pengguna['saldo'] ?? 0;
-$no_rekening = $data_pengguna['no_rekening'] ?? 'Belum terdaftar';
 
-// Format saldo ke Rupiah
-function formatRupiah($angka) {
-    return 'Rp ' . number_format($angka, 0, ',', '.');
+// Ambil ID goal dari parameter URL
+$id_goal = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+// Query untuk mendapatkan detail goal
+$goal_query = mysqli_query($koneksi, "SELECT * FROM savings_goals WHERE id_goal = '$id_goal' AND id_pengguna = '$id_pengguna'");
+$goal = mysqli_fetch_assoc($goal_query);
+
+// Jika goal tidak ditemukan
+if (!$goal) {
+    header("Location: savings-goals.php");
+    exit();
+}
+
+// Proses form tambah saldo
+if (isset($_POST['tambah_saldo'])) {
+    $jumlah = mysqli_real_escape_string($koneksi, $_POST['jumlah']);
+    $catatan = mysqli_real_escape_string($koneksi, $_POST['catatan']);
+    $tanggal = date('Y-m-d H:i:s');
+    
+    // Validasi jumlah
+    if ($jumlah <= 0) {
+        $error = "Jumlah harus lebih dari 0";
+    } else {
+        // Mulai transaksi
+        mysqli_begin_transaction($koneksi);
+        
+        try {
+            // 1. Cek saldo pengguna
+            $user_query = mysqli_query($koneksi, "SELECT saldo FROM pengguna WHERE id_pengguna = '$id_pengguna' FOR UPDATE");
+            $user = mysqli_fetch_assoc($user_query);
+            
+            if ($user['saldo'] < $jumlah) {
+                throw new Exception("Saldo tidak mencukupi untuk melakukan transaksi ini");
+            }
+            
+            // 2. Kurangi saldo pengguna
+            $update_saldo = mysqli_query($koneksi, 
+                "UPDATE pengguna 
+                 SET saldo = saldo - $jumlah 
+                 WHERE id_pengguna = '$id_pengguna'");
+            
+            if (!$update_saldo) {
+                throw new Exception("Gagal mengurangi saldo pengguna: " . mysqli_error($koneksi));
+            }
+            
+            // 3. Update jumlah terkumpul di savings_goals
+            $update_goal = mysqli_query($koneksi, 
+                "UPDATE savings_goals 
+                 SET jumlah_terkumpul = jumlah_terkumpul + $jumlah 
+                 WHERE id_goal = $id_goal");
+            
+            if (!$update_goal) {
+                throw new Exception("Gagal update goal: " . mysqli_error($koneksi));
+            }
+            
+            // 4. Cek apakah goal sudah tercapai
+            $new_amount = $goal['jumlah_terkumpul'] + $jumlah;
+            if ($new_amount >= $goal['target_jumlah'] && $goal['status'] == 'aktif') {
+                $update_status = mysqli_query($koneksi, 
+                    "UPDATE savings_goals 
+                     SET status = 'tercapai', tanggal_tercapai = NOW() 
+                     WHERE id_goal = $id_goal");
+                
+                if (!$update_status) {
+                    throw new Exception("Gagal update status: " . mysqli_error($koneksi));
+                }
+            }
+            
+            // Commit transaksi
+            mysqli_commit($koneksi);
+            
+            $_SESSION['success'] = "Saldo berhasil ditambahkan ke tabungan!";
+            header("Location: tabungan.php");
+            exit();
+            
+        } catch (Exception $e) {
+            // Rollback jika ada error
+            mysqli_rollback($koneksi);
+            $error = $e->getMessage();
+        }
+    }
 }
 
 ?>
@@ -189,121 +263,126 @@ function formatRupiah($angka) {
 		</header>
 		<!--end header -->
 
-		<div class="page-wrapper">
-			<div class="page-content">
-				<!--breadcrumb-->
-				<div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-					<div class="breadcrumb-title pe-3">Transaksi</div>
-					<div class="ps-3">
-						<nav aria-label="breadcrumb">
-							<ol class="breadcrumb mb-0 p-0">
-								<li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a>
-								</li>
-								<li class="breadcrumb-item active" aria-current="page">Halaman Transaksi</li>
-							</ol>
-						</nav>
-					</div>
-				</div>
-
-				<hr/>
-				<div class="card">
-					<div class="card-body">
-						<div class="table-responsive">
-						<table id="example" class="table table-striped table-bordered" style="width:100%">
-							<thead>
-								<tr>
-									<th>No</th>
-									<th>Tanggal Top Up</th>
-									<th>Nomor Referensi</th>
-									<th>Jumlah</th>
-									<th>Metode Pembayaran</th>
-									<th>Bukti Pembayaran</th>
-									<th>Status</th>
-								</tr>
-							</thead>
-							<tbody>
-							<?php
-								$no = 1;
-								$tampil = mysqli_query($koneksi, 
-									"SELECT * FROM top_up WHERE id_pengguna = '$id_pengguna' ORDER BY tanggal_top_up DESC");
-								while($data = mysqli_fetch_array($tampil)):
-							?>
-								<tr>
-									<td><?= $no++ ?></td>
-									<td><?= date('d/m/Y H:i', strtotime($data['tanggal_top_up'])) ?></td>
-									<td><?= $data['nomor_referensi'] ?></td>
-									<td>Rp <?= number_format($data['jumlah'], 0, ',', '.') ?></td>
-									<td><?= ucfirst($data['metode_pembayaran']) ?></td>
-									<td>
-										<?php if(!empty($data['bukti_pembayaran'])): ?>
-											<a href="bukti_pembayaran/<?= $data['bukti_pembayaran'] ?>" target="_blank" class="btn btn-sm btn-primary">Lihat Bukti</a>
-										<?php else: ?>
-											<?php if($data['status'] == 'pending'): ?>
-												<button type="button" class="btn btn-sm btn-warning upload-bukti" 
-														onclick="openUploadModal('<?= $data['id_top_up'] ?>')">
-													<i class="fa fa-upload"></i> Upload Bukti
-												</button>
-											<?php else: ?>
-												<span class="text-muted">Tidak ada bukti</span>
-											<?php endif; ?>
-										<?php endif; ?>
-									</td>
-									<td>
-										<?php 
-										$status_class = '';
-										if($data['status'] == 'pending') $status_class = 'warning';
-										elseif($data['status'] == 'sukses') $status_class = 'success';
-										elseif($data['status'] == 'gagal') $status_class = 'danger';
-										?>
-										<span class="badge bg-<?= $status_class ?>"><?= ucfirst($data['status']) ?></span>
-									</td>
-								</tr>
-							<?php endwhile; ?>
-							</tbody>
-							<tfoot>
-								<tr>
-									<th>No</th>
-									<th>Tanggal Top Up</th>
-									<th>Nomor Referensi</th>
-									<th>Jumlah</th>
-									<th>Metode Pembayaran</th>
-									<th>Bukti Pembayaran</th>
-									<th>Status</th>
-								</tr>
-							</tfoot>
-						</table>
-
-						<div id="uploadBuktiModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
-							<div class="modal-dialog" style="margin: 10% auto; width: 90%; max-width: 500px;">
-								<div class="modal-content" style="background-color: #fefefe; padding: 20px; border: 1px solid #888; border-radius: 5px;">
-									<div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 20px;">
-										<h5 class="modal-title">Upload Bukti Pembayaran</h5>
-										<span class="close" onclick="closeModal()" style="font-size: 24px; cursor: pointer;">&times;</span>
-									</div>
-									<form id="formUploadBukti" action="proses_upload_bukti.php" method="post" enctype="multipart/form-data">
-										<div class="modal-body">
-											<input type="hidden" name="id_top_up" id="id_top_up_upload">
-											
-											<div class="form-group" style="margin-bottom: 15px;">
-												<label for="bukti_pembayaran" style="display: block; margin-bottom: 5px;">File Bukti Pembayaran (JPG/PNG)</label>
-												<input type="file" class="form-control-file" id="bukti_pembayaran" name="bukti_pembayaran" accept="image/jpeg,image/png" required>
-												<small class="form-text text-muted" style="display: block; margin-top: 5px; font-size: 0.875em; color: #6c757d;">Ukuran maksimal file 2MB</small>
-											</div>
-										</div>
-										<div class="modal-footer" style="padding-top: 15px; border-top: 1px solid #ddd; margin-top: 15px; display: flex; justify-content: flex-end;">
-											<button type="button" class="btn btn-secondary" onclick="closeModal()" style="margin-right: 10px; padding: 6px 12px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Batal</button>
-											<button type="submit" class="btn btn-primary" style="padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Upload</button>
-										</div>
-									</form>
-								</div>
-							</div>
-						</div>
-						</div>
-					</div>
-				</div>
-
-			</div>
-		</div>
+        <div class="page-wrapper">
+            <div class="page-content">
+                <!--breadcrumb-->
+                <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+                    <div class="breadcrumb-title pe-3">Savings Goals</div>
+                    <div class="ps-3">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0 p-0">
+                                <li class="breadcrumb-item"><a href="savings-goals.php"><i class="bx bx-home-alt"></i></a>
+                                </li>
+                                <li class="breadcrumb-item"><a href="detail-savings-goal.php?id=<?= $id_goal ?>">Detail Goal</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Tambah Saldo</li>
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+                <!--end breadcrumb-->
+                
+                <hr/>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h4 class="mb-4">Tambah Saldo untuk Goal</h4>
+                                
+                                <?php if (isset($error)): ?>
+                                    <div class="alert alert-danger"><?= $error ?></div>
+                                <?php endif; ?>
+                                
+                                <form method="post">
+                                    <div class="mb-3">
+                                        <label class="form-label">Nama Goal</label>
+                                        <input type="text" class="form-control" value="<?= htmlspecialchars($goal['nama_goal']) ?>" readonly>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Saldo Saat Ini</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="text" class="form-control" value="<?= number_format($goal['jumlah_terkumpul'], 0, ',', '.') ?>" readonly>
+                                            <span class="input-group-text">dari Rp <?= number_format($goal['target_jumlah'], 0, ',', '.') ?></span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="jumlah" class="form-label">Jumlah Tambahan <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="number" class="form-control" name="jumlah" id="jumlah" required min="1000">
+                                        </div>
+                                        <small class="text-muted">Minimal Rp1.000</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="catatan" class="form-label">Catatan (Opsional)</label>
+                                        <textarea class="form-control" name="catatan" id="catatan" rows="2" placeholder="Misal: Setoran gaji bulan Januari"></textarea>
+                                    </div>
+                                    
+                                    <div class="d-md-flex d-grid align-items-center gap-3">
+                                        <button type="submit" name="tambah_saldo" class="btn btn-primary px-4">Simpan</button>
+                                        <a href="detail-savings-goal.php?id=<?= $id_goal ?>" class="btn btn-light px-4">Batal</a>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card border shadow-none">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Info Goal</h5>
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="me-3" style="font-size: 2rem;">
+                                                <?= $goal['ikon'] ?: '💰' ?>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0"><?= htmlspecialchars($goal['nama_goal']) ?></h6>
+                                                <p class="mb-0 text-muted">Target: Rp <?= number_format($goal['target_jumlah'], 0, ',', '.') ?></p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="progress mb-3" style="height: 10px;">
+                                            <?php
+                                            $progress = ($goal['jumlah_terkumpul'] / $goal['target_jumlah']) * 100;
+                                            $progress_class = $progress >= 100 ? 'bg-success' : ($progress >= 75 ? 'bg-info' : ($progress >= 50 ? 'bg-warning' : 'bg-danger'));
+                                            ?>
+                                            <div class="progress-bar <?= $progress_class ?>" role="progressbar" style="width: <?= min($progress, 100) ?>%"></div>
+                                        </div>
+                                        <p class="text-center mb-3"><?= number_format($progress, 1) ?>% Tercapai</p>
+                                        
+                                        <?php if ($goal['target_tanggal']): ?>
+                                            <div class="mb-3">
+                                                <h6>Target Tanggal:</h6>
+                                                <p><?= date('d F Y', strtotime($goal['target_tanggal'])) ?></p>
+                                                <?php
+                                                $today = new DateTime();
+                                                $target_date = new DateTime($goal['target_tanggal']);
+                                                $interval = $today->diff($target_date);
+                                                ?>
+                                                <p class="<?= $target_date < $today ? 'text-danger' : 'text-success' ?>">
+                                                    <i class="bx bx-time"></i> 
+                                                    <?= $target_date < $today ? 'Terlambat ' : 'Tersisa ' ?>
+                                                    <?= $interval->format('%a hari') ?>
+                                                </p>
+                                            </div>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($goal['deskripsi']): ?>
+                                            <div class="mb-3">
+                                                <h6>Deskripsi:</h6>
+                                                <p><?= htmlspecialchars($goal['deskripsi']) ?></p>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
 		<!--end page wrapper -->
 		<!--start overlay-->
@@ -499,41 +578,12 @@ function formatRupiah($angka) {
 		} );
 	</script>
 
+
 	<script src="../assets/js/app.js"></script>
 	<script>
 		new PerfectScrollbar(".app-container")
 	</script>
 
-<script>
-// Fungsi untuk membuka modal
-function openUploadModal(id_top_up) {
-    // Set nilai pada form
-    document.getElementById('id_top_up_upload').value = id_top_up;
-    
-    // Tampilkan modal
-    document.getElementById('uploadBuktiModal').style.display = 'block';
-}
-
-// Fungsi untuk menutup modal
-function closeModal() {
-    document.getElementById('uploadBuktiModal').style.display = 'none';
-}
-
-// Menutup modal jika user mengklik di luar modal
-window.onclick = function(event) {
-    var modal = document.getElementById('uploadBuktiModal');
-    if (event.target == modal) {
-        modal.style.display = 'none';
-    }
-}
-
-// Menangani klik tombol Escape untuk menutup modal
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        closeModal();
-    }
-});
-</script>
 
 </body>
 

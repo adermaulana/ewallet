@@ -208,6 +208,17 @@ if(isset($_POST['simpan_topup'])) {
 						</li>
 					</ul>
 				</li>
+				<li>
+					<a class="has-arrow" href="javascript:;">
+						<div class="parent-icon"><i class="bx bx-dollar"></i>
+						</div>
+						<div class="menu-title">Tabungan</div>
+					</a>
+					<ul>
+						<li> <a href="tabungan.php"><i class='bx bx-radio-circle'></i>Lihat Tabungan</a>
+						</li>
+					</ul>
+				</li>
 			</ul>
 			<!--end navigation-->
 		</div>
