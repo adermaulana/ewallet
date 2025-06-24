@@ -18,43 +18,7 @@ if (!isset($_SESSION['id_admin'])) {
     exit();
 }
 
-if (isset($_POST['simpan'])) {
-    // Ambil data dari form
-    $nama = mysqli_real_escape_string($koneksi, $_POST['nama']);
-    $email = mysqli_real_escape_string($koneksi, $_POST['email']);
-    $telepon = mysqli_real_escape_string($koneksi, $_POST['telepon']);
-    $username = mysqli_real_escape_string($koneksi, $_POST['username']);
-    $password = md5($_POST['password']); // Gunakan password_hash bukan md5
-    $tanggal_bergabung = date('Y-m-d H:i:s'); // Tanggal saat registrasi
 
-    // Check if username or email already exists
-    $check = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE username='$username' OR email='$email'");
-    if (mysqli_num_rows($check) > 0) {
-        echo "<script>
-                alert('Username atau email sudah digunakan!');
-                document.location='registrasi.php';
-            </script>";
-        exit;
-    }
-
-    // Insert data ke database
-    $simpan = mysqli_query($koneksi, "INSERT INTO pengguna 
-                        (nama_lengkap, email, nomor_telepon, username, password) 
-                        VALUES 
-                        ('$nama', '$email', '$telepon', '$username', '$password')");
-
-    if ($simpan) {
-        echo "<script>
-                alert('Registrasi berhasil!');
-                document.location='pengguna.php';
-            </script>";
-    } else {
-        echo "<script>
-                alert('Gagal registrasi: ".mysqli_error($koneksi)."');
-                document.location='registrasi.php';
-            </script>";
-    }
-}
 
 
 ?>
@@ -230,57 +194,60 @@ if (isset($_POST['simpan'])) {
 			<div class="page-content">
 				<!--breadcrumb-->
 				<div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-					<div class="breadcrumb-title pe-3">Pengguna</div>
+					<div class="breadcrumb-title pe-3">Siswa</div>
 					<div class="ps-3">
 						<nav aria-label="breadcrumb">
 							<ol class="breadcrumb mb-0 p-0">
 								<li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a>
 								</li>
-								<li class="breadcrumb-item active" aria-current="page">Tambah Pengguna</li>
+								<li class="breadcrumb-item active" aria-current="page">Halaman Siswa</li>
 							</ol>
 						</nav>
 					</div>
 				</div>
-				<!--end breadcrumb-->
+
 				<hr/>
 				<div class="card">
 					<div class="card-body">
-						<form class="" method="post">
-							<div>
-								<div class="col-md-6 mb-3">
-									<label for="nama" class="form-label">Nama Lengkap</label>
-									<input type="text" class="form-control" name="nama" id="nama" required autofocus>
-								</div>
-								
-								<div class="col-md-6 mb-3">
-									<label for="email" class="form-label">Email</label>
-									<input type="email" class="form-control" name="email" id="email" required>
-								</div>
-								
-								<div class="col-md-6 mb-3">
-									<label for="telepon" class="form-label">Nomor Telepon</label>
-									<input type="tel" class="form-control" name="telepon" id="telepon" required>
-								</div>
-								
-								<div class="col-md-6 mb-3">
-									<label for="username" class="form-label">Username</label>
-									<input type="text" class="form-control" name="username" id="username" required>
-								</div>
-								
-								<div class="col-md-6 mb-3">
-									<label for="password" class="form-label">Password</label>
-									<input type="password" class="form-control" name="password" id="password" required minlength="6">
-									<small class="text-muted">Minimal 6 karakter</small>
-								</div>
-							</div>
-							
-							<div class="col-md-12">
-								<div class="d-md-flex d-grid align-items-center gap-3">
-									<button type="submit" name="simpan" class="btn btn-primary px-4">Daftar</button>
-									<button type="reset" class="btn btn-light px-4">Reset</button>
-								</div>
-							</div>
-						</form>
+						<div class="table-responsive">
+						<table id="example" class="table table-striped table-bordered" style="width:100%">
+							<thead>
+								<tr>
+									<th>No</th>
+									<th>NIM</th>
+									<th>Nama Mahasiswa</th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php
+								$no = 1;
+								$tampil = mysqli_query($koneksi, "SELECT * FROM 221154_adrian ORDER BY id ASC");
+								while($data = mysqli_fetch_array($tampil)):
+								?>
+								<tr>
+									<td>
+										<a href="editsiswa.php?hal=edit&id=<?= $data['id']?>" 
+										   style="text-decoration: none; color: #007bff; cursor: pointer;"
+										   title="Klik untuk edit data">
+											<?= $no++ ?>
+										</a>
+									</td>
+									<td><?= htmlspecialchars($data['nim']) ?></td>
+									<td><?= htmlspecialchars($data['nama']) ?></td>
+								</tr>
+								<?php
+								endwhile; 
+								?>
+							</tbody>
+							<tfoot>
+								<tr>
+									<th>No</th>
+									<th>NIM</th>
+									<th>Nama Mahasiswa</th>
+								</tr>
+							</tfoot>
+						</table>
+						</div>
 					</div>
 				</div>
 

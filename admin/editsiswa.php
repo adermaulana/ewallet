@@ -18,45 +18,64 @@ if (!isset($_SESSION['id_admin'])) {
     exit();
 }
 
-if (isset($_POST['simpan'])) {
-    // Ambil data dari form
-    $nama = mysqli_real_escape_string($koneksi, $_POST['nama']);
-    $email = mysqli_real_escape_string($koneksi, $_POST['email']);
-    $telepon = mysqli_real_escape_string($koneksi, $_POST['telepon']);
-    $username = mysqli_real_escape_string($koneksi, $_POST['username']);
-    $password = md5($_POST['password']); // Gunakan password_hash bukan md5
-    $tanggal_bergabung = date('Y-m-d H:i:s'); // Tanggal saat registrasi
 
-    // Check if username or email already exists
-    $check = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE username='$username' OR email='$email'");
+// Inisialisasi variabel
+$id = $nim = $nama = '';
+
+// Ambil data mahasiswa yang akan diedit
+if(isset($_GET['hal']) && $_GET['hal'] == "edit" && isset($_GET['id'])){
+    $id = $_GET['id'];
+    $tampil = mysqli_query($koneksi, "SELECT * FROM 221154_adrian WHERE id = '$id'");
+    $data = mysqli_fetch_array($tampil);
+    
+    if($data){
+        $id = $data['id'];
+        $nim = $data['nim'];
+        $nama = $data['nama'];
+    } else {
+        echo "<script>
+                alert('Data mahasiswa tidak ditemukan!');
+                document.location='mahasiswa.php';
+            </script>";
+        exit;
+    }
+}
+
+// Proses update data
+if (isset($_POST['simpan'])) {
+    $id_mahasiswa = $_POST['id_mahasiswa']; // Mengambil id dari form hidden
+    $nim = mysqli_real_escape_string($koneksi, $_POST['nim']);
+    $nama = mysqli_real_escape_string($koneksi, $_POST['nama']);
+    
+    // Check if NIM already exists (excluding current data)
+    $check = mysqli_query($koneksi, "SELECT * FROM 221154_adrian WHERE nim='$nim' AND id != '$id_mahasiswa'");
+    
     if (mysqli_num_rows($check) > 0) {
         echo "<script>
-                alert('Username atau email sudah digunakan!');
-                document.location='registrasi.php';
+                alert('NIM sudah digunakan oleh mahasiswa lain!');
+                document.location='editmahasiswa.php?hal=edit&id=$id';
             </script>";
         exit;
     }
 
-    // Insert data ke database
-    $simpan = mysqli_query($koneksi, "INSERT INTO pengguna 
-                        (nama_lengkap, email, nomor_telepon, username, password) 
-                        VALUES 
-                        ('$nama', '$email', '$telepon', '$username', '$password')");
+    // Update data
+    $update = mysqli_query($koneksi, "UPDATE 221154_adrian SET 
+                nim = '$nim',
+                nama = '$nama'
+                WHERE id = '$id_mahasiswa'");
 
-    if ($simpan) {
+    if ($update) {
         echo "<script>
-                alert('Registrasi berhasil!');
-                document.location='pengguna.php';
+                alert('Data mahasiswa berhasil diperbarui!');
+                document.location='siswa.php';
             </script>";
     } else {
         echo "<script>
-                alert('Gagal registrasi: ".mysqli_error($koneksi)."');
-                document.location='registrasi.php';
+                alert('Gagal memperbarui data: ".mysqli_error($koneksi)."');
+                document.location='editsiswa.php?hal=edit&id=$id_mahasiswa';
             </script>";
     }
 }
-
-
 ?>
 <!doctype html>
 <html lang="en">
@@ -243,41 +262,27 @@ if (isset($_POST['simpan'])) {
 				</div>
 				<!--end breadcrumb-->
 				<hr/>
-				<div class="card">
+<div class="card">
 					<div class="card-body">
-						<form class="" method="post">
-							<div>
+						<form method="post">
+							<input type="hidden" name="id_mahasiswa" value="<?= $id ?>">
+							
+							<div class="row">
 								<div class="col-md-6 mb-3">
-									<label for="nama" class="form-label">Nama Lengkap</label>
-									<input type="text" class="form-control" name="nama" id="nama" required autofocus>
+									<label for="nim" class="form-label">NIM</label>
+									<input type="text" class="form-control" name="nim" id="nim" value="<?= htmlspecialchars($nim) ?>" required>
 								</div>
 								
 								<div class="col-md-6 mb-3">
-									<label for="email" class="form-label">Email</label>
-									<input type="email" class="form-control" name="email" id="email" required>
-								</div>
-								
-								<div class="col-md-6 mb-3">
-									<label for="telepon" class="form-label">Nomor Telepon</label>
-									<input type="tel" class="form-control" name="telepon" id="telepon" required>
-								</div>
-								
-								<div class="col-md-6 mb-3">
-									<label for="username" class="form-label">Username</label>
-									<input type="text" class="form-control" name="username" id="username" required>
-								</div>
-								
-								<div class="col-md-6 mb-3">
-									<label for="password" class="form-label">Password</label>
-									<input type="password" class="form-control" name="password" id="password" required minlength="6">
-									<small class="text-muted">Minimal 6 karakter</small>
+									<label for="nama" class="form-label">Nama Mahasiswa</label>
+									<input type="text" class="form-control" name="nama" id="nama" value="<?= htmlspecialchars($nama) ?>" required>
 								</div>
 							</div>
 							
 							<div class="col-md-12">
 								<div class="d-md-flex d-grid align-items-center gap-3">
-									<button type="submit" name="simpan" class="btn btn-primary px-4">Daftar</button>
-									<button type="reset" class="btn btn-light px-4">Reset</button>
+									<button type="submit" name="simpan" class="btn btn-primary px-4">Simpan Perubahan</button>
+									<a href="mahasiswa.php" class="btn btn-secondary px-4">Kembali</a>
 								</div>
 							</div>
 						</form>

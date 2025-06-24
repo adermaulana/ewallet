@@ -127,6 +127,17 @@ if(isset($_GET['hal']) == "hapus"){
 						</li>
 					</ul>
 				</li>
+				<li>
+					<a class="has-arrow" href="javascript:;">
+						<div class="parent-icon"><i class="bx bx-repeat"></i>
+						</div>
+						<div class="menu-title">Siswa</div>
+					</a>
+					<ul>
+						<li> <a href="siswa.php"><i class='bx bx-radio-circle'></i>Lihat Siswa</a>
+						</li>
+					</ul>
+				</li>
 			</ul>
 			<!--end navigation-->
 		</div>
